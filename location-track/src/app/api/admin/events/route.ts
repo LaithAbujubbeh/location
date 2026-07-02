@@ -2,6 +2,11 @@ import type { ZodError } from "zod";
 
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { PermissionError, requireAdmin } from "@/lib/permissions";
+import {
+  consumeUserRateLimit,
+  rateLimitPolicies,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 import { createEventSchema } from "@/lib/validators";
 import {
   createEventForAdmin,
@@ -22,6 +27,15 @@ function formatValidationError(error: ZodError) {
 export async function POST(request: Request) {
   try {
     const adminSession = await requireAdmin();
+    const rateLimit = await consumeUserRateLimit({
+      policy: rateLimitPolicies.adminCreateEvent,
+      userId: adminSession.user.id,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit);
+    }
+
     let body: unknown;
 
     try {

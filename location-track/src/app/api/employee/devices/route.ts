@@ -2,6 +2,11 @@ import type { ZodError } from "zod";
 
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { PermissionError, requireUser } from "@/lib/permissions";
+import {
+  consumeUserRateLimit,
+  rateLimitPolicies,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 import { registerDeviceSchema } from "@/lib/validators";
 import { getOrCreateUserDevice } from "@/services/device.service";
 
@@ -23,6 +28,17 @@ function formatValidationError(error: ZodError) {
 export async function POST(request: Request) {
   try {
     const session = await requireUser();
+    const rateLimit = await consumeUserRateLimit({
+      policy: rateLimitPolicies.deviceRegistration,
+      userId: session.user.id,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit, {
+        headers: privateNoStoreHeaders,
+      });
+    }
+
     let body: unknown;
 
     try {

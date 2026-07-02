@@ -3,6 +3,11 @@ import type { ZodError } from "zod";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { PermissionError, requireEmployee } from "@/lib/permissions";
 import {
+  consumeUserRateLimit,
+  rateLimitPolicies,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
+import {
   recheckRouteParamsSchema,
   recheckSubmitPayloadSchema,
 } from "@/lib/validators";
@@ -43,6 +48,17 @@ export async function POST(
           headers: privateNoStoreHeaders,
         },
       );
+    }
+
+    const rateLimit = await consumeUserRateLimit({
+      policy: rateLimitPolicies.recheckSubmit,
+      userId: employeeSession.user.id,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit, {
+        headers: privateNoStoreHeaders,
+      });
     }
 
     let body: unknown;

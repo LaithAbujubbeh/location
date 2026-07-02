@@ -2,6 +2,11 @@ import type { ZodError } from "zod";
 
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { PermissionError, requireAdmin } from "@/lib/permissions";
+import {
+  consumeUserRateLimit,
+  rateLimitPolicies,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 import { deviceRouteParamsSchema } from "@/lib/validators";
 import {
   approveUserDevice,
@@ -32,6 +37,17 @@ function formatValidationError(error: ZodError) {
 export async function POST(_request: Request, context: DeviceRouteContext) {
   try {
     const adminSession = await requireAdmin();
+    const rateLimit = await consumeUserRateLimit({
+      policy: rateLimitPolicies.adminDeviceReview,
+      userId: adminSession.user.id,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit, {
+        headers: privateNoStoreHeaders,
+      });
+    }
+
     const params = await context.params;
     const parsed = deviceRouteParamsSchema.safeParse(params);
 
