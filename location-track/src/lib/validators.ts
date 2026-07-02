@@ -123,6 +123,10 @@ export type RecheckSubmitPayloadInput = z.infer<
   typeof recheckSubmitPayloadSchema
 >;
 
+export const checkOutPayloadSchema = locationPayloadSchema;
+
+export type CheckOutPayloadInput = z.infer<typeof checkOutPayloadSchema>;
+
 export const adminDeviceListQuerySchema = z.object({
   page: paginationNumber(1, 10000),
   pageSize: paginationNumber(20, 100),
