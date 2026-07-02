@@ -1,14 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { RecheckStatus } from "@prisma/client";
+import {
+  AssignmentStatus,
+  DeviceStatus,
+  ProofStatus,
+  RecheckStatus,
+} from "@prisma/client";
 
 import {
   calculateRecheckExpiry,
   compareRecheckToken,
+  decideRecheckProof,
   generateRandomRecheckTimes,
   hashRecheckToken,
+  RecheckServiceError,
   scheduleRechecksForAssignment,
+  validateRecheckSubmissionAccess,
+  validateRecheckTokenState,
 } from "../../services/recheck.service.ts";
 
 test("generates sorted random recheck times after check-in with a full expiration window", () => {
@@ -165,4 +174,181 @@ test("creates scheduled recheck records with hashed tokens only", async () => {
         new Date("2026-07-02T11:00:00.000Z").getTime(),
     );
   }
+});
+
+function assertRecheckError(code: string) {
+  return (error: unknown) =>
+    error instanceof RecheckServiceError && error.code === code;
+}
+
+test("invalid recheck token fails validation", () => {
+  assert.throws(
+    () =>
+      validateRecheckTokenState({
+        rawToken: "wrong-token",
+        now: new Date("2026-07-10T12:00:00.000Z"),
+        recheck: {
+          tokenHash: hashRecheckToken("correct-token"),
+          status: RecheckStatus.ACTIVE,
+          startsAt: new Date("2026-07-10T11:55:00.000Z"),
+          expiresAt: new Date("2026-07-10T12:10:00.000Z"),
+          submittedAt: null,
+          completedAt: null,
+        },
+      }),
+    assertRecheckError("INVALID_RECHECK_TOKEN"),
+  );
+});
+
+test("expired recheck token fails validation", () => {
+  const rawToken = "expired-token";
+
+  assert.throws(
+    () =>
+      validateRecheckTokenState({
+        rawToken,
+        now: new Date("2026-07-10T12:00:00.000Z"),
+        recheck: {
+          tokenHash: hashRecheckToken(rawToken),
+          status: RecheckStatus.ACTIVE,
+          startsAt: new Date("2026-07-10T11:30:00.000Z"),
+          expiresAt: new Date("2026-07-10T11:59:59.000Z"),
+          submittedAt: null,
+          completedAt: null,
+        },
+      }),
+    assertRecheckError("RECHECK_EXPIRED"),
+  );
+});
+
+test("reused recheck token fails validation", () => {
+  const rawToken = "already-used-token";
+
+  assert.throws(
+    () =>
+      validateRecheckTokenState({
+        rawToken,
+        now: new Date("2026-07-10T12:00:00.000Z"),
+        recheck: {
+          tokenHash: hashRecheckToken(rawToken),
+          status: RecheckStatus.PASSED,
+          startsAt: new Date("2026-07-10T11:30:00.000Z"),
+          expiresAt: new Date("2026-07-10T12:30:00.000Z"),
+          submittedAt: new Date("2026-07-10T11:45:00.000Z"),
+          completedAt: new Date("2026-07-10T11:45:00.000Z"),
+        },
+      }),
+    assertRecheckError("RECHECK_ALREADY_SUBMITTED"),
+  );
+});
+
+test("employee cannot submit another employee's recheck", () => {
+  const rawToken = "employee-owned-token";
+
+  assert.throws(
+    () =>
+      validateRecheckSubmissionAccess({
+        rawToken,
+        employeeId: "employee_2",
+        deviceStatus: DeviceStatus.TRUSTED,
+        now: new Date("2026-07-10T12:00:00.000Z"),
+        recheck: {
+          tokenHash: hashRecheckToken(rawToken),
+          status: RecheckStatus.ACTIVE,
+          startsAt: new Date("2026-07-10T11:30:00.000Z"),
+          expiresAt: new Date("2026-07-10T12:30:00.000Z"),
+          submittedAt: null,
+          completedAt: null,
+          employeeId: "employee_1",
+          assignment: {
+            employeeId: "employee_1",
+            status: AssignmentStatus.IN_PROGRESS,
+          },
+        },
+      }),
+    assertRecheckError("RECHECK_NOT_ASSIGNED"),
+  );
+});
+
+test("trusted device is required for recheck submission", () => {
+  const rawToken = "trusted-device-required-token";
+
+  assert.throws(
+    () =>
+      validateRecheckSubmissionAccess({
+        rawToken,
+        employeeId: "employee_1",
+        deviceStatus: DeviceStatus.PENDING,
+        now: new Date("2026-07-10T12:00:00.000Z"),
+        recheck: {
+          tokenHash: hashRecheckToken(rawToken),
+          status: RecheckStatus.ACTIVE,
+          startsAt: new Date("2026-07-10T11:30:00.000Z"),
+          expiresAt: new Date("2026-07-10T12:30:00.000Z"),
+          submittedAt: null,
+          completedAt: null,
+          employeeId: "employee_1",
+          assignment: {
+            employeeId: "employee_1",
+            status: AssignmentStatus.IN_PROGRESS,
+          },
+        },
+      }),
+    assertRecheckError("DEVICE_NOT_TRUSTED"),
+  );
+});
+
+test("inside radius with good accuracy passes recheck", () => {
+  const decision = decideRecheckProof({
+    photoRequired: false,
+    hasPhoto: false,
+    gpsFreshness: {
+      fresh: true,
+      ageMs: 1000,
+    },
+    accuracyMeters: 25,
+    distanceMeters: 20,
+    radiusMeters: 75,
+  });
+
+  assert.equal(decision.proofStatus, ProofStatus.ACCEPTED);
+  assert.equal(decision.recheckStatus, RecheckStatus.PASSED);
+  assert.equal(decision.assignmentStatus, null);
+});
+
+test("outside radius fails recheck", () => {
+  const decision = decideRecheckProof({
+    photoRequired: false,
+    hasPhoto: false,
+    gpsFreshness: {
+      fresh: true,
+      ageMs: 1000,
+    },
+    accuracyMeters: 25,
+    distanceMeters: 250,
+    radiusMeters: 75,
+  });
+
+  assert.equal(decision.proofStatus, ProofStatus.REJECTED);
+  assert.equal(decision.recheckStatus, RecheckStatus.FAILED);
+  assert.equal(decision.assignmentStatus, AssignmentStatus.FAILED);
+  assert.equal(decision.rejectionCode, "OUTSIDE_RADIUS");
+});
+
+test("poor accuracy inside the uncertainty range marks recheck suspicious", () => {
+  const decision = decideRecheckProof({
+    photoRequired: false,
+    hasPhoto: false,
+    gpsFreshness: {
+      fresh: true,
+      ageMs: 1000,
+    },
+    accuracyMeters: 250,
+    distanceMeters: 70,
+    radiusMeters: 75,
+  });
+
+  assert.equal(decision.proofStatus, ProofStatus.SUSPICIOUS);
+  assert.equal(decision.recheckStatus, RecheckStatus.SUSPICIOUS);
+  assert.equal(decision.assignmentStatus, AssignmentStatus.SUSPICIOUS);
 });

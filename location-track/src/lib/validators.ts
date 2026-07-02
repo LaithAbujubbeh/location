@@ -108,6 +108,12 @@ export const checkInPayloadSchema = locationPayloadSchema;
 
 export type CheckInPayloadInput = z.infer<typeof checkInPayloadSchema>;
 
+export const recheckSubmitPayloadSchema = locationPayloadSchema;
+
+export type RecheckSubmitPayloadInput = z.infer<
+  typeof recheckSubmitPayloadSchema
+>;
+
 export const adminDeviceListQuerySchema = z.object({
   page: paginationNumber(1, 10000),
   pageSize: paginationNumber(20, 100),
@@ -124,4 +130,8 @@ export const deviceRouteParamsSchema = z.object({
 
 export const eventRouteParamsSchema = z.object({
   eventId: z.string().trim().min(1),
+});
+
+export const recheckRouteParamsSchema = z.object({
+  token: z.string().trim().min(16).max(512),
 });

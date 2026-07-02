@@ -39,6 +39,9 @@ enum RecheckStatus {
   SCHEDULED
   ACTIVE
   COMPLETED
+  PASSED
+  SUSPICIOUS
+  FAILED
   MISSED
   EXPIRED
 }
@@ -197,6 +200,7 @@ model EventRecheck {
   startsAt      DateTime
   expiresAt     DateTime
   sentAt        DateTime?
+  submittedAt   DateTime?
   completedAt   DateTime?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt

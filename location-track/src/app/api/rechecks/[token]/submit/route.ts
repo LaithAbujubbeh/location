@@ -1,0 +1,99 @@
+import type { ZodError } from "zod";
+
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { PermissionError, requireEmployee } from "@/lib/permissions";
+import {
+  recheckRouteParamsSchema,
+  recheckSubmitPayloadSchema,
+} from "@/lib/validators";
+import {
+  RecheckServiceError,
+  submitRecheckProof,
+} from "@/services/recheck.service";
+
+export const dynamic = "force-dynamic";
+
+const privateNoStoreHeaders = {
+  "Cache-Control": "private, no-store",
+};
+
+function formatValidationError(error: ZodError) {
+  return error.issues
+    .map((issue) => {
+      const path = issue.path.map(String).join(".");
+      return path ? `${path}: ${issue.message}` : issue.message;
+    })
+    .join("; ");
+}
+
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ token: string }> },
+) {
+  try {
+    const employeeSession = await requireEmployee();
+    const params = recheckRouteParamsSchema.safeParse(await context.params);
+
+    if (!params.success) {
+      return apiError(
+        "VALIDATION_ERROR",
+        formatValidationError(params.error),
+        400,
+        {
+          headers: privateNoStoreHeaders,
+        },
+      );
+    }
+
+    let body: unknown;
+
+    try {
+      body = await request.json();
+    } catch {
+      return apiError("INVALID_JSON", "Request body must be valid JSON.", 400, {
+        headers: privateNoStoreHeaders,
+      });
+    }
+
+    const parsed = recheckSubmitPayloadSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return apiError(
+        "VALIDATION_ERROR",
+        formatValidationError(parsed.error),
+        400,
+        {
+          headers: privateNoStoreHeaders,
+        },
+      );
+    }
+
+    const result = await submitRecheckProof({
+      token: params.data.token,
+      session: employeeSession,
+      input: parsed.data,
+    });
+
+    return apiSuccess(result, 201, {
+      headers: privateNoStoreHeaders,
+    });
+  } catch (error) {
+    if (error instanceof PermissionError) {
+      return apiError(error.code, error.message, error.status, {
+        headers: privateNoStoreHeaders,
+      });
+    }
+
+    if (error instanceof RecheckServiceError) {
+      return apiError(error.code, error.message, error.status, {
+        headers: privateNoStoreHeaders,
+      });
+    }
+
+    console.error(error);
+
+    return apiError("INTERNAL_SERVER_ERROR", "Something went wrong.", 500, {
+      headers: privateNoStoreHeaders,
+    });
+  }
+}

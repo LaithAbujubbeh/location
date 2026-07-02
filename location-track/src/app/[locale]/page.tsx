@@ -29,7 +29,7 @@ export default async function Home({ params }: HomeProps) {
   const messages = await getMessages(locale);
 
   return (
-    <main className="min-h-[100dvh] bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
+    <main className="min-h-dvh bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
       <div className="mx-auto grid w-full max-w-5xl gap-6">
         <header className="flex flex-col gap-4 rounded-lg border border-border bg-surface-elevated p-5 text-start shadow-[var(--shadow-sm)] sm:flex-row sm:items-center sm:justify-between">
           <div className="grid gap-1">
@@ -44,10 +44,7 @@ export default async function Home({ params }: HomeProps) {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <LanguageToggle
-              currentLocale={locale}
-              labels={messages.language}
-            />
+            <LanguageToggle currentLocale={locale} labels={messages.language} />
             <ThemeToggle
               labels={{
                 ariaLabel: messages.theme.label,
@@ -77,9 +74,7 @@ export default async function Home({ params }: HomeProps) {
                   {messages.home.buttons.outline}
                 </Button>
                 <Button variant="ghost">{messages.home.buttons.ghost}</Button>
-                <Button variant="danger">
-                  {messages.home.buttons.danger}
-                </Button>
+                <Button variant="danger">{messages.home.buttons.danger}</Button>
               </div>
 
               <div className="flex flex-wrap gap-2">
