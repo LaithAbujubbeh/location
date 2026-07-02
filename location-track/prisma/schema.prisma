@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EventStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum AssignmentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SUSPICIOUS
+  FAILED
+  MISSED
+}
+
+enum ProofType {
+  CHECK_IN
+  RECHECK
+  CHECK_OUT
+}
+
+enum ProofStatus {
+  ACCEPTED
+  REJECTED
+  SUSPICIOUS
+}
+
+enum RecheckStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  MISSED
+  EXPIRED
+}
+
+enum DeviceStatus {
+  PENDING
+  TRUSTED
+  REJECTED
+}
+
+model Event {
+  id                     String            @id @default(cuid())
+  title                  String
+  description            String?
+  locationName           String?
+  latitude               Decimal           @db.Decimal(10, 7)
+  longitude              Decimal           @db.Decimal(10, 7)
+  radiusMeters           Int
+  startsAt               DateTime
+  endsAt                 DateTime
+  status                 EventStatus       @default(SCHEDULED)
+  photoRequired          Boolean           @default(false)
+  checkoutRequired       Boolean           @default(true)
+  rechecksEnabled        Boolean           @default(false)
+  recheckCount           Int               @default(0)
+  recheckWindowMinutes   Int?
+  recheckDurationMinutes Int?
+  createdByUserId        String
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  assignments            EventAssignment[]
+
+  @@index([status, startsAt])
+  @@index([createdByUserId, startsAt])
+  @@index([startsAt, endsAt])
+}
+
+model EventAssignment {
+  id            String           @id @default(cuid())
+  eventId       String
+  employeeId    String
+  status        AssignmentStatus @default(PENDING)
+  checkedInAt   DateTime?
+  checkedOutAt  DateTime?
+  completedAt   DateTime?
+  failureReason String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  event         Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  proofs        EventProof[]
+  rechecks      EventRecheck[]
+
+  @@unique([eventId, employeeId])
+  @@index([employeeId, status])
+  @@index([eventId, status])
+}
+
+model EventProof {
+  id             String          @id @default(cuid())
+  assignmentId   String
+  recheckId      String?
+  type           ProofType
+  status         ProofStatus
+  latitude       Decimal         @db.Decimal(10, 7)
+  longitude      Decimal         @db.Decimal(10, 7)
+  accuracyMeters Float
+  distanceMeters Float
+  gpsTimestamp   DateTime
+  deviceId       String
+  photoUrl       String?
+  rejectionCode  String?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  assignment     EventAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  recheck        EventRecheck?   @relation(fields: [recheckId], references: [id], onDelete: SetNull)
+
+  @@index([assignmentId, type, createdAt])
+  @@index([recheckId])
+  @@index([status, createdAt])
+  @@index([deviceId, createdAt])
+}
+
+model EventRecheck {
+  id            String          @id @default(cuid())
+  assignmentId  String
+  tokenHash     String          @unique
+  status        RecheckStatus   @default(SCHEDULED)
+  scheduledAt   DateTime
+  availableFrom DateTime
+  expiresAt     DateTime
+  sentAt        DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  assignment    EventAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  proofs        EventProof[]
+
+  @@index([assignmentId, status])
+  @@index([status, availableFrom])
+  @@index([status, expiresAt])
+}
+
+model UserDevice {
+  id               String       @id @default(cuid())
+  userId           String
+  deviceId         String
+  status           DeviceStatus @default(PENDING)
+  label            String?
+  userAgent        String?
+  firstSeenAt      DateTime     @default(now())
+  lastSeenAt       DateTime     @default(now())
+  approvedAt       DateTime?
+  rejectedAt       DateTime?
+  reviewedByUserId String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([userId, deviceId])
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([deviceId])
+}
