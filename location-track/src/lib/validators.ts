@@ -51,3 +51,26 @@ export const createEventSchema = z
   });
 
 export type CreateEventInput = z.infer<typeof createEventSchema>;
+
+const paginationNumber = (defaultValue: number, maxValue: number) =>
+  z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (!value) {
+        return defaultValue;
+      }
+
+      const parsed = Number(value);
+      return Number.isInteger(parsed) ? parsed : Number.NaN;
+    })
+    .pipe(z.number().int().min(1).max(maxValue));
+
+export const employeeEventListQuerySchema = z.object({
+  page: paginationNumber(1, 10000),
+  pageSize: paginationNumber(20, 100),
+});
+
+export type EmployeeEventListQueryInput = z.infer<
+  typeof employeeEventListQuerySchema
+>;

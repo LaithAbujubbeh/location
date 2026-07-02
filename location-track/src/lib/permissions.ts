@@ -103,6 +103,20 @@ export async function requireAdmin(): Promise<AuthenticatedSession> {
   return session;
 }
 
+export async function requireEmployee(): Promise<AuthenticatedSession> {
+  const session = await requireUser();
+
+  if (!isEmployee(session.user)) {
+    throw new PermissionError(
+      403,
+      "FORBIDDEN",
+      "Employee access is required.",
+    );
+  }
+
+  return session;
+}
+
 export async function requireEmployeeOrAdmin(): Promise<AuthenticatedSession> {
   const session = await requireUser();
 
