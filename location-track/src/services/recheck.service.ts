@@ -26,6 +26,7 @@ type RandomInt = (maxExclusive: number) => number;
 
 const OPEN_RECHECK_STATUSES = new Set<RecheckStatus>([
   RecheckStatus.SCHEDULED,
+  RecheckStatus.PENDING,
   RecheckStatus.ACTIVE,
 ]);
 
@@ -725,7 +726,11 @@ export async function submitRecheckProofInTransaction(
       id: recheck.id,
       submittedAt: null,
       status: {
-        in: [RecheckStatus.SCHEDULED, RecheckStatus.ACTIVE],
+        in: [
+          RecheckStatus.SCHEDULED,
+          RecheckStatus.PENDING,
+          RecheckStatus.ACTIVE,
+        ],
       },
     },
     data: {

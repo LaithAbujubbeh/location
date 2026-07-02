@@ -37,6 +37,7 @@ enum ProofStatus {
 
 enum RecheckStatus {
   SCHEDULED
+  PENDING
   ACTIVE
   COMPLETED
   PASSED
