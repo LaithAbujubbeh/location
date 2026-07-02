@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npm run test:unit && npm run test:integration",
     "test:unit": "node --test src/tests/unit/*.test.ts",
+    "test:integration": "node --test src/tests/integration/*.test.ts",
+    "test:e2e": "playwright test",
+    "playwright:install": "playwright install chromium",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -27,6 +31,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

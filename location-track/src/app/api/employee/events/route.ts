@@ -1,12 +1,28 @@
 import type { ZodError } from "zod";
 
-import { apiError, apiSuccess } from "@/lib/api-response";
-import { privateNoStoreHeaders } from "@/lib/cache";
-import { PermissionError, requireEmployee } from "@/lib/permissions";
-import { employeeEventListQuerySchema } from "@/lib/validators";
-import { listAssignedEventsForEmployee } from "@/services/event.service";
+import { apiError, apiSuccess } from "../../../../lib/api-response.ts";
+import { privateNoStoreHeaders } from "../../../../lib/cache.ts";
+import {
+  PermissionError,
+  requireEmployee,
+} from "../../../../lib/permissions.ts";
+import { employeeEventListQuerySchema } from "../../../../lib/validators.ts";
+import {
+  listAssignedEventsForEmployee,
+  type EmployeeEventListResult,
+} from "../../../../services/event.service.ts";
 
 export const dynamic = "force-dynamic";
+
+type EmployeeEventsRouteDeps = {
+  requireEmployeeSession: typeof requireEmployee;
+  listEvents: typeof listAssignedEventsForEmployee;
+};
+
+const defaultDeps: EmployeeEventsRouteDeps = {
+  requireEmployeeSession: requireEmployee,
+  listEvents: listAssignedEventsForEmployee,
+};
 
 function formatValidationError(error: ZodError) {
   return error.issues
@@ -17,9 +33,12 @@ function formatValidationError(error: ZodError) {
     .join("; ");
 }
 
-export async function GET(request: Request) {
+export async function handleEmployeeEventsRequest(
+  request: Request,
+  deps: EmployeeEventsRouteDeps = defaultDeps,
+) {
   try {
-    const employeeSession = await requireEmployee();
+    const employeeSession = await deps.requireEmployeeSession();
     const searchParams = new URL(request.url).searchParams;
     const parsed = employeeEventListQuerySchema.safeParse({
       page: searchParams.get("page") ?? undefined,
@@ -37,7 +56,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const result = await listAssignedEventsForEmployee({
+    const result: EmployeeEventListResult = await deps.listEvents({
       employeeId: employeeSession.user.id,
       query: parsed.data,
     });
@@ -58,4 +77,8 @@ export async function GET(request: Request) {
       headers: privateNoStoreHeaders,
     });
   }
+}
+
+export async function GET(request: Request) {
+  return handleEmployeeEventsRequest(request);
 }

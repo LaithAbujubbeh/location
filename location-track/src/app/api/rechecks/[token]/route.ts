@@ -1,14 +1,23 @@
 import type { ZodError } from "zod";
 
-import { apiError, apiSuccess } from "@/lib/api-response";
-import { privateNoStoreHeaders } from "@/lib/cache";
-import { recheckRouteParamsSchema } from "@/lib/validators";
+import { apiError, apiSuccess } from "../../../../lib/api-response.ts";
+import { privateNoStoreHeaders } from "../../../../lib/cache.ts";
+import { recheckRouteParamsSchema } from "../../../../lib/validators.ts";
 import {
   getRecheckTokenInfo,
   RecheckServiceError,
-} from "@/services/recheck.service";
+  type RecheckTokenInfoResult,
+} from "../../../../services/recheck.service.ts";
 
 export const dynamic = "force-dynamic";
+
+type RecheckTokenRouteDeps = {
+  getTokenInfo: typeof getRecheckTokenInfo;
+};
+
+const defaultDeps: RecheckTokenRouteDeps = {
+  getTokenInfo: getRecheckTokenInfo,
+};
 
 function formatValidationError(error: ZodError) {
   return error.issues
@@ -19,9 +28,10 @@ function formatValidationError(error: ZodError) {
     .join("; ");
 }
 
-export async function GET(
+export async function handleRecheckTokenLookupRequest(
   _request: Request,
   context: { params: Promise<{ token: string }> },
+  deps: RecheckTokenRouteDeps = defaultDeps,
 ) {
   try {
     const params = recheckRouteParamsSchema.safeParse(await context.params);
@@ -37,7 +47,7 @@ export async function GET(
       );
     }
 
-    const result = await getRecheckTokenInfo({
+    const result: RecheckTokenInfoResult = await deps.getTokenInfo({
       token: params.data.token,
     });
 
@@ -57,4 +67,11 @@ export async function GET(
       headers: privateNoStoreHeaders,
     });
   }
+}
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ token: string }> },
+) {
+  return handleRecheckTokenLookupRequest(request, context);
 }

@@ -538,6 +538,23 @@ export async function listAssignedEventsForEmployee({
   query,
   now = new Date(),
 }: ListAssignedEventsForEmployeeArgs): Promise<EmployeeEventListResult> {
+  return prisma.$transaction((tx) =>
+    listAssignedEventsForEmployeeInTransaction(tx, {
+      employeeId,
+      query,
+      now,
+    }),
+  );
+}
+
+export async function listAssignedEventsForEmployeeInTransaction(
+  tx: Prisma.TransactionClient,
+  {
+    employeeId,
+    query,
+    now = new Date(),
+  }: ListAssignedEventsForEmployeeArgs,
+): Promise<EmployeeEventListResult> {
   const where: Prisma.EventAssignmentWhereInput = {
     employeeId,
     event: {
@@ -552,9 +569,9 @@ export async function listAssignedEventsForEmployee({
 
   const skip = (query.page - 1) * query.pageSize;
 
-  const [total, assignments] = await prisma.$transaction([
-    prisma.eventAssignment.count({ where }),
-    prisma.eventAssignment.findMany({
+  const [total, assignments] = await Promise.all([
+    tx.eventAssignment.count({ where }),
+    tx.eventAssignment.findMany({
       where,
       orderBy: [
         {

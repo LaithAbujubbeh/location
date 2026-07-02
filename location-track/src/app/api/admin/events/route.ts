@@ -1,20 +1,33 @@
 import type { ZodError } from "zod";
 
-import { apiError, apiSuccess } from "@/lib/api-response";
-import { privateNoStoreHeaders } from "@/lib/cache";
-import { PermissionError, requireAdmin } from "@/lib/permissions";
+import { apiError, apiSuccess } from "../../../../lib/api-response.ts";
+import { privateNoStoreHeaders } from "../../../../lib/cache.ts";
+import { PermissionError, requireAdmin } from "../../../../lib/permissions.ts";
 import {
   consumeUserRateLimit,
   rateLimitPolicies,
   rateLimitResponse,
-} from "@/lib/rate-limit";
-import { createEventSchema } from "@/lib/validators";
+} from "../../../../lib/rate-limit.ts";
+import { createEventSchema } from "../../../../lib/validators.ts";
 import {
   createEventForAdmin,
   EventServiceError,
-} from "@/services/event.service";
+  type CreateEventResult,
+} from "../../../../services/event.service.ts";
 
 export const dynamic = "force-dynamic";
+
+type AdminEventsRouteDeps = {
+  requireAdminSession: typeof requireAdmin;
+  consumeRateLimit: typeof consumeUserRateLimit;
+  createEvent: typeof createEventForAdmin;
+};
+
+const defaultDeps: AdminEventsRouteDeps = {
+  requireAdminSession: requireAdmin,
+  consumeRateLimit: consumeUserRateLimit,
+  createEvent: createEventForAdmin,
+};
 
 function formatValidationError(error: ZodError) {
   return error.issues
@@ -25,10 +38,13 @@ function formatValidationError(error: ZodError) {
     .join("; ");
 }
 
-export async function POST(request: Request) {
+export async function handleAdminCreateEventRequest(
+  request: Request,
+  deps: AdminEventsRouteDeps = defaultDeps,
+) {
   try {
-    const adminSession = await requireAdmin();
-    const rateLimit = await consumeUserRateLimit({
+    const adminSession = await deps.requireAdminSession();
+    const rateLimit = await deps.consumeRateLimit({
       policy: rateLimitPolicies.adminCreateEvent,
       userId: adminSession.user.id,
     });
@@ -62,7 +78,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await createEventForAdmin({
+    const result: CreateEventResult = await deps.createEvent({
       input: parsed.data,
       createdByUserId: adminSession.user.id,
     });
@@ -89,4 +105,8 @@ export async function POST(request: Request) {
       headers: privateNoStoreHeaders,
     });
   }
+}
+
+export async function POST(request: Request) {
+  return handleAdminCreateEventRequest(request);
 }

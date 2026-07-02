@@ -13,20 +13,21 @@ import {
   checkGpsTimestampFreshness,
   DEFAULT_ACCEPTED_GPS_ACCURACY_METERS,
   DEFAULT_MAX_REVIEWABLE_GPS_ACCURACY_METERS,
-} from "@/lib/geo";
-import { prisma } from "@/lib/prisma";
-import type { AuthenticatedSession } from "@/lib/permissions";
-import type { CheckInPayloadInput } from "@/lib/validators";
-import { scheduleRechecksForAssignment } from "@/services/recheck.service";
+} from "../lib/geo.ts";
+import { prisma } from "../lib/prisma.ts";
+import type { AuthenticatedSession } from "../lib/permissions.ts";
+import type { CheckInPayloadInput } from "../lib/validators.ts";
+import { scheduleRechecksForAssignment } from "./recheck.service.ts";
 
 export class CheckInServiceError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly code: string,
-    message: string,
-  ) {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(status: number, code: string, message: string) {
     super(message);
     this.name = "CheckInServiceError";
+    this.status = status;
+    this.code = code;
   }
 }
 
@@ -182,13 +183,220 @@ export async function checkInToEvent({
 }: CheckInToEventArgs): Promise<CheckInResult> {
   const employeeId = assertEmployeeSession(session);
 
-  return prisma.$transaction(async (tx) => {
-    const assignment = await tx.eventAssignment.findUnique({
-      where: {
-        eventId_employeeId: {
-          eventId,
-          employeeId,
+  return prisma.$transaction((tx) =>
+    checkInToEventInTransaction(tx, {
+      eventId,
+      employeeId,
+      input,
+      now,
+    }),
+  );
+}
+
+export async function checkInToEventInTransaction(
+  tx: Prisma.TransactionClient,
+  {
+    eventId,
+    employeeId,
+    input,
+    now,
+  }: {
+    eventId: string;
+    employeeId: string;
+    input: CheckInPayloadInput;
+    now: Date;
+  },
+): Promise<CheckInResult> {
+  const assignment = await tx.eventAssignment.findUnique({
+    where: {
+      eventId_employeeId: {
+        eventId,
+        employeeId,
+      },
+    },
+    select: {
+      id: true,
+      status: true,
+      checkedInAt: true,
+      failureReason: true,
+      event: {
+        select: {
+          id: true,
+          status: true,
+          latitude: true,
+          longitude: true,
+          radiusMeters: true,
+          startsAt: true,
+          endsAt: true,
+          photoRequired: true,
+          rechecksEnabled: true,
+          recheckCount: true,
+          recheckWindowMinutes: true,
         },
+      },
+    },
+  });
+
+  if (!assignment) {
+    throw new CheckInServiceError(
+      404,
+      "ASSIGNMENT_NOT_FOUND",
+      "Assigned event was not found.",
+    );
+  }
+
+  if (assignment.checkedInAt || assignment.status !== AssignmentStatus.PENDING) {
+    throw new CheckInServiceError(
+      409,
+      "ALREADY_CHECKED_IN",
+      "This assignment is not eligible for check-in.",
+    );
+  }
+
+  if (
+    !isEventOpenForCheckIn({
+      status: assignment.event.status,
+      startsAt: assignment.event.startsAt,
+      endsAt: assignment.event.endsAt,
+      now,
+    })
+  ) {
+    throw new CheckInServiceError(
+      409,
+      "EVENT_NOT_OPEN_FOR_CHECK_IN",
+      "Event is not currently open for check-in.",
+    );
+  }
+
+  const trustedDevice = await tx.userDevice.findUnique({
+    where: {
+      userId_deviceId: {
+        userId: employeeId,
+        deviceId: input.deviceId,
+      },
+    },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  if (!trustedDevice || trustedDevice.status !== DeviceStatus.TRUSTED) {
+    throw new CheckInServiceError(
+      403,
+      "DEVICE_NOT_TRUSTED",
+      "This device is not trusted for check-in.",
+    );
+  }
+
+  await tx.userDevice.update({
+    where: {
+      id: trustedDevice.id,
+    },
+    data: {
+      lastSeenAt: now,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const eventPoint = {
+    latitude: assignment.event.latitude.toNumber(),
+    longitude: assignment.event.longitude.toNumber(),
+  };
+  const submittedPoint = {
+    latitude: input.latitude,
+    longitude: input.longitude,
+  };
+  const distanceMeters = calculateHaversineDistanceMeters(
+    eventPoint,
+    submittedPoint,
+  );
+  const gpsFreshness = checkGpsTimestampFreshness({
+    gpsTimestamp: input.gpsTimestamp,
+    now,
+  });
+  const decision = decideCheckIn({
+    photoRequired: assignment.event.photoRequired,
+    hasPhoto: Boolean(input.photoUrl),
+    gpsFreshness,
+    accuracyMeters: input.accuracyMeters,
+    distanceMeters,
+    radiusMeters: assignment.event.radiusMeters,
+  });
+
+  const proof = await tx.eventProof.create({
+    data: {
+      assignmentId: assignment.id,
+      type: ProofType.CHECK_IN,
+      status: decision.proofStatus,
+      latitude: new Prisma.Decimal(input.latitude),
+      longitude: new Prisma.Decimal(input.longitude),
+      accuracyMeters: input.accuracyMeters,
+      distanceMeters,
+      gpsTimestamp: input.gpsTimestamp,
+      deviceId: input.deviceId,
+      photoUrl: input.photoUrl,
+      rejectionCode: decision.rejectionCode,
+      notes: decision.notes,
+    },
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      latitude: true,
+      longitude: true,
+      accuracyMeters: true,
+      distanceMeters: true,
+      gpsTimestamp: true,
+      deviceId: true,
+      photoUrl: true,
+      rejectionCode: true,
+      notes: true,
+      createdAt: true,
+    },
+  });
+
+  let updatedAssignment = assignment;
+
+  if (decision.assignmentStatus) {
+    const updateResult = await tx.eventAssignment.updateMany({
+      where: {
+        id: assignment.id,
+        status: AssignmentStatus.PENDING,
+        checkedInAt: null,
+      },
+      data: {
+        status: decision.assignmentStatus,
+        checkedInAt: now,
+        failureReason: null,
+      },
+    });
+
+    if (updateResult.count !== 1) {
+      throw new CheckInServiceError(
+        409,
+        "ALREADY_CHECKED_IN",
+        "This assignment is not eligible for check-in.",
+      );
+    }
+
+    if (assignment.event.rechecksEnabled) {
+      await scheduleRechecksForAssignment(tx, {
+        assignmentId: assignment.id,
+        employeeId,
+        eventStartsAt: assignment.event.startsAt,
+        eventEndsAt: assignment.event.endsAt,
+        checkInAt: now,
+        recheckCount: assignment.event.recheckCount,
+        recheckWindowMinutes: assignment.event.recheckWindowMinutes,
+      });
+    }
+
+    const refetchedAssignment = await tx.eventAssignment.findUniqueOrThrow({
+      where: {
+        id: assignment.id,
       },
       select: {
         id: true,
@@ -212,251 +420,66 @@ export async function checkInToEvent({
         },
       },
     });
-
-    if (!assignment) {
-      throw new CheckInServiceError(
-        404,
-        "ASSIGNMENT_NOT_FOUND",
-        "Assigned event was not found.",
-      );
-    }
-
-    if (assignment.checkedInAt || assignment.status !== AssignmentStatus.PENDING) {
-      throw new CheckInServiceError(
-        409,
-        "ALREADY_CHECKED_IN",
-        "This assignment is not eligible for check-in.",
-      );
-    }
-
-    if (
-      !isEventOpenForCheckIn({
-        status: assignment.event.status,
-        startsAt: assignment.event.startsAt,
-        endsAt: assignment.event.endsAt,
-        now,
-      })
-    ) {
-      throw new CheckInServiceError(
-        409,
-        "EVENT_NOT_OPEN_FOR_CHECK_IN",
-        "Event is not currently open for check-in.",
-      );
-    }
-
-    const trustedDevice = await tx.userDevice.findUnique({
+    updatedAssignment = refetchedAssignment;
+  } else {
+    const refetchedAssignment = await tx.eventAssignment.update({
       where: {
-        userId_deviceId: {
-          userId: employeeId,
-          deviceId: input.deviceId,
-        },
+        id: assignment.id,
+      },
+      data: {
+        failureReason: decision.rejectionCode,
       },
       select: {
         id: true,
         status: true,
+        checkedInAt: true,
+        failureReason: true,
+        event: {
+          select: {
+            id: true,
+            status: true,
+            latitude: true,
+            longitude: true,
+            radiusMeters: true,
+            startsAt: true,
+            endsAt: true,
+            photoRequired: true,
+            rechecksEnabled: true,
+            recheckCount: true,
+            recheckWindowMinutes: true,
+          },
+        },
       },
     });
+    updatedAssignment = refetchedAssignment;
+  }
 
-    if (!trustedDevice || trustedDevice.status !== DeviceStatus.TRUSTED) {
-      throw new CheckInServiceError(
-        403,
-        "DEVICE_NOT_TRUSTED",
-        "This device is not trusted for check-in.",
-      );
-    }
-
-    await tx.userDevice.update({
-      where: {
-        id: trustedDevice.id,
-      },
-      data: {
-        lastSeenAt: now,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    const eventPoint = {
-      latitude: assignment.event.latitude.toNumber(),
-      longitude: assignment.event.longitude.toNumber(),
-    };
-    const submittedPoint = {
-      latitude: input.latitude,
-      longitude: input.longitude,
-    };
-    const distanceMeters = calculateHaversineDistanceMeters(
-      eventPoint,
-      submittedPoint,
-    );
-    const gpsFreshness = checkGpsTimestampFreshness({
-      gpsTimestamp: input.gpsTimestamp,
-      now,
-    });
-    const decision = decideCheckIn({
-      photoRequired: assignment.event.photoRequired,
-      hasPhoto: Boolean(input.photoUrl),
-      gpsFreshness,
-      accuracyMeters: input.accuracyMeters,
+  return {
+    assignment: {
+      id: updatedAssignment.id,
+      status: updatedAssignment.status,
+      checkedInAt: updatedAssignment.checkedInAt?.toISOString() ?? null,
+      failureReason: updatedAssignment.failureReason,
+    },
+    proof: {
+      id: proof.id,
+      type: proof.type,
+      status: proof.status,
+      latitude: proof.latitude.toNumber(),
+      longitude: proof.longitude.toNumber(),
+      accuracyMeters: proof.accuracyMeters,
+      distanceMeters: proof.distanceMeters,
+      gpsTimestamp: proof.gpsTimestamp.toISOString(),
+      deviceId: proof.deviceId,
+      photoUrl: proof.photoUrl,
+      rejectionCode: proof.rejectionCode,
+      notes: proof.notes,
+      createdAt: proof.createdAt.toISOString(),
+    },
+    verification: {
       distanceMeters,
       radiusMeters: assignment.event.radiusMeters,
-    });
-
-    const proof = await tx.eventProof.create({
-      data: {
-        assignmentId: assignment.id,
-        type: ProofType.CHECK_IN,
-        status: decision.proofStatus,
-        latitude: new Prisma.Decimal(input.latitude),
-        longitude: new Prisma.Decimal(input.longitude),
-        accuracyMeters: input.accuracyMeters,
-        distanceMeters,
-        gpsTimestamp: input.gpsTimestamp,
-        deviceId: input.deviceId,
-        photoUrl: input.photoUrl,
-        rejectionCode: decision.rejectionCode,
-        notes: decision.notes,
-      },
-      select: {
-        id: true,
-        type: true,
-        status: true,
-        latitude: true,
-        longitude: true,
-        accuracyMeters: true,
-        distanceMeters: true,
-        gpsTimestamp: true,
-        deviceId: true,
-        photoUrl: true,
-        rejectionCode: true,
-        notes: true,
-        createdAt: true,
-      },
-    });
-
-    let updatedAssignment = assignment;
-
-    if (decision.assignmentStatus) {
-      const updateResult = await tx.eventAssignment.updateMany({
-        where: {
-          id: assignment.id,
-          status: AssignmentStatus.PENDING,
-          checkedInAt: null,
-        },
-        data: {
-          status: decision.assignmentStatus,
-          checkedInAt: now,
-          failureReason: null,
-        },
-      });
-
-      if (updateResult.count !== 1) {
-        throw new CheckInServiceError(
-          409,
-          "ALREADY_CHECKED_IN",
-          "This assignment is not eligible for check-in.",
-        );
-      }
-
-      if (assignment.event.rechecksEnabled) {
-        await scheduleRechecksForAssignment(tx, {
-          assignmentId: assignment.id,
-          employeeId,
-          eventStartsAt: assignment.event.startsAt,
-          eventEndsAt: assignment.event.endsAt,
-          checkInAt: now,
-          recheckCount: assignment.event.recheckCount,
-          recheckWindowMinutes: assignment.event.recheckWindowMinutes,
-        });
-      }
-
-      const refetchedAssignment = await tx.eventAssignment.findUniqueOrThrow({
-        where: {
-          id: assignment.id,
-        },
-        select: {
-          id: true,
-          status: true,
-          checkedInAt: true,
-          failureReason: true,
-          event: {
-            select: {
-              id: true,
-              status: true,
-              latitude: true,
-              longitude: true,
-              radiusMeters: true,
-              startsAt: true,
-              endsAt: true,
-              photoRequired: true,
-              rechecksEnabled: true,
-              recheckCount: true,
-              recheckWindowMinutes: true,
-            },
-          },
-        },
-      });
-      updatedAssignment = refetchedAssignment;
-    } else {
-      const refetchedAssignment = await tx.eventAssignment.update({
-        where: {
-          id: assignment.id,
-        },
-        data: {
-          failureReason: decision.rejectionCode,
-        },
-        select: {
-          id: true,
-          status: true,
-          checkedInAt: true,
-          failureReason: true,
-          event: {
-            select: {
-              id: true,
-              status: true,
-              latitude: true,
-              longitude: true,
-              radiusMeters: true,
-              startsAt: true,
-              endsAt: true,
-              photoRequired: true,
-              rechecksEnabled: true,
-              recheckCount: true,
-              recheckWindowMinutes: true,
-            },
-          },
-        },
-      });
-      updatedAssignment = refetchedAssignment;
-    }
-
-    return {
-      assignment: {
-        id: updatedAssignment.id,
-        status: updatedAssignment.status,
-        checkedInAt: updatedAssignment.checkedInAt?.toISOString() ?? null,
-        failureReason: updatedAssignment.failureReason,
-      },
-      proof: {
-        id: proof.id,
-        type: proof.type,
-        status: proof.status,
-        latitude: proof.latitude.toNumber(),
-        longitude: proof.longitude.toNumber(),
-        accuracyMeters: proof.accuracyMeters,
-        distanceMeters: proof.distanceMeters,
-        gpsTimestamp: proof.gpsTimestamp.toISOString(),
-        deviceId: proof.deviceId,
-        photoUrl: proof.photoUrl,
-        rejectionCode: proof.rejectionCode,
-        notes: proof.notes,
-        createdAt: proof.createdAt.toISOString(),
-      },
-      verification: {
-        distanceMeters,
-        radiusMeters: assignment.event.radiusMeters,
-        gpsAgeMs: gpsFreshness.ageMs,
-      },
-    };
-  });
+      gpsAgeMs: gpsFreshness.ageMs,
+    },
+  };
 }
