@@ -58,17 +58,30 @@ enum UserRole {
   EMPLOYEE
 }
 
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  WHATSAPP
+  WEB_PUSH
+}
+
+enum NotificationType {
+  RECHECK
+}
+
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String         @unique
+  emailVerified Boolean        @default(false)
   image         String?
-  role          UserRole  @default(EMPLOYEE)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          UserRole       @default(EMPLOYEE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   sessions      Session[]
   accounts      Account[]
+  notifications Notification[]
 
   @@index([role])
 }
@@ -193,26 +206,45 @@ model EventProof {
 }
 
 model EventRecheck {
-  id            String          @id @default(cuid())
-  assignmentId  String
-  employeeId    String
-  tokenHash     String          @unique
-  status        RecheckStatus   @default(SCHEDULED)
-  startsAt      DateTime
-  expiresAt     DateTime
-  sentAt        DateTime?
-  submittedAt   DateTime?
-  completedAt   DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  assignment    EventAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  proofs        EventProof[]
+  id                 String          @id @default(cuid())
+  assignmentId       String
+  employeeId         String
+  tokenHash          String?         @unique
+  status             RecheckStatus   @default(SCHEDULED)
+  startsAt           DateTime
+  expiresAt          DateTime
+  sentAt             DateTime?
+  notificationSentAt DateTime?
+  submittedAt        DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  assignment         EventAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  proofs             EventProof[]
 
   @@index([assignmentId, status])
   @@index([assignmentId, startsAt])
   @@index([employeeId, status])
   @@index([status, startsAt])
   @@index([status, expiresAt])
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType
+  channel   NotificationChannel @default(IN_APP)
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([readAt])
+  @@index([createdAt])
+  @@index([userId, readAt, createdAt])
 }
 
 model UserDevice {

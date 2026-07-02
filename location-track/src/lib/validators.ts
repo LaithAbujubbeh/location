@@ -76,6 +76,15 @@ export type EmployeeEventListQueryInput = z.infer<
   typeof employeeEventListQuerySchema
 >;
 
+export const employeeNotificationListQuerySchema = z.object({
+  page: paginationNumber(1, 10000),
+  pageSize: paginationNumber(20, 100),
+});
+
+export type EmployeeNotificationListQueryInput = z.infer<
+  typeof employeeNotificationListQuerySchema
+>;
+
 export const registerDeviceSchema = z.object({
   deviceId: z.string().trim().uuid(),
   label: z
@@ -134,4 +143,8 @@ export const eventRouteParamsSchema = z.object({
 
 export const recheckRouteParamsSchema = z.object({
   token: z.string().trim().min(16).max(512),
+});
+
+export const notificationRouteParamsSchema = z.object({
+  notificationId: z.string().trim().min(1),
 });

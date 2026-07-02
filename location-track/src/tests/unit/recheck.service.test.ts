@@ -126,11 +126,11 @@ test("does not create duplicate rechecks for the same assignment", async () => {
   assert.equal(createCalls, 0);
 });
 
-test("creates scheduled recheck records with hashed tokens only", async () => {
+test("creates scheduled recheck records without raw tokens or token hashes", async () => {
   const createdRecords: Array<{
     assignmentId: string;
     employeeId: string;
-    tokenHash: string;
+    tokenHash?: string;
     startsAt: Date;
     expiresAt: Date;
     status: RecheckStatus;
@@ -163,12 +163,9 @@ test("creates scheduled recheck records with hashed tokens only", async () => {
     assert.equal(record.assignmentId, "assignment_1");
     assert.equal(record.employeeId, "employee_1");
     assert.equal(record.status, RecheckStatus.SCHEDULED);
-    assert.match(record.tokenHash, /^[a-f0-9]{64}$/);
-    assert.notEqual(record.tokenHash, result[index].rawToken);
-    assert.equal(
-      compareRecheckToken(result[index].rawToken, record.tokenHash),
-      true,
-    );
+    assert.equal(record.tokenHash, undefined);
+    assert.equal("rawToken" in result[index], false);
+    assert.equal("tokenHash" in result[index], false);
     assert.ok(
       record.expiresAt.getTime() <=
         new Date("2026-07-02T11:00:00.000Z").getTime(),

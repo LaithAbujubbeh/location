@@ -3,15 +3,39 @@ import { timingSafeEqual } from "crypto";
 import { AssignmentStatus, RecheckStatus } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 
+import {
+  generateRecheckToken,
+  hashRecheckToken,
+} from "./recheck.service.ts";
+import {
+  sendRecheckNotification,
+  type EmailSendFn,
+  type NotificationWarning,
+} from "./notification.service.ts";
+
 export type ProcessRechecksSummary = {
   activatedCount: number;
   missedCount: number;
+  notifications: {
+    inAppCreatedCount: number;
+    emailSentCount: number;
+    emailSkippedCount: number;
+    warnings: NotificationWarning[];
+  };
 };
 
 export type CronAuthorizationInput = {
   authorizationHeader: string | null;
   querySecret: string | null;
   expectedSecret: string | null | undefined;
+};
+
+export type ProcessScheduledRechecksOptions = {
+  now?: Date;
+  appUrl?: string | null;
+  resendApiKey?: string | null;
+  resendFromEmail?: string | null;
+  sendEmail?: EmailSendFn;
 };
 
 function safeEqual(left: string, right: string) {
@@ -60,25 +84,70 @@ export function isCronRequestAuthorized({
 
 export async function processScheduledRechecks({
   now = new Date(),
-}: {
-  now?: Date;
-} = {}): Promise<ProcessRechecksSummary> {
+  appUrl = process.env.APP_URL,
+  resendApiKey = process.env.RESEND_API_KEY,
+  resendFromEmail = process.env.RESEND_FROM_EMAIL,
+  sendEmail,
+}: ProcessScheduledRechecksOptions = {}): Promise<ProcessRechecksSummary> {
   const { prisma } = await import("../lib/prisma.ts");
 
   return prisma.$transaction((tx) =>
-    processScheduledRechecksInTransaction(tx, { now }),
+    processScheduledRechecksInTransaction(tx, {
+      now,
+      appUrl,
+      resendApiKey,
+      resendFromEmail,
+      sendEmail,
+    }),
   );
+}
+
+function buildRecheckLink({
+  appUrl,
+  rawToken,
+}: {
+  appUrl: string | null | undefined;
+  rawToken: string;
+}) {
+  const baseUrl = appUrl?.trim() || "http://localhost:3000";
+  const normalizedBaseUrl = baseUrl.endsWith("/")
+    ? baseUrl.slice(0, -1)
+    : baseUrl;
+
+  return `${normalizedBaseUrl}/recheck/${rawToken}`;
+}
+
+function emptySummary(): ProcessRechecksSummary {
+  return {
+    activatedCount: 0,
+    missedCount: 0,
+    notifications: {
+      inAppCreatedCount: 0,
+      emailSentCount: 0,
+      emailSkippedCount: 0,
+      warnings: [],
+    },
+  };
 }
 
 export async function processScheduledRechecksInTransaction(
   tx: Prisma.TransactionClient,
   {
     now,
+    appUrl,
+    resendApiKey,
+    resendFromEmail,
+    sendEmail,
   }: {
     now: Date;
+    appUrl?: string | null;
+    resendApiKey?: string | null;
+    resendFromEmail?: string | null;
+    sendEmail?: EmailSendFn;
   },
 ): Promise<ProcessRechecksSummary> {
-  const activated = await tx.eventRecheck.updateMany({
+  const summary = emptySummary();
+  const rechecksToActivate = await tx.eventRecheck.findMany({
     where: {
       status: RecheckStatus.SCHEDULED,
       startsAt: {
@@ -88,13 +157,101 @@ export async function processScheduledRechecksInTransaction(
         gt: now,
       },
       submittedAt: null,
+      notificationSentAt: null,
     },
-    data: {
-      status: RecheckStatus.PENDING,
+    select: {
+      id: true,
+      employeeId: true,
+      expiresAt: true,
+      assignment: {
+        select: {
+          event: {
+            select: {
+              title: true,
+              locationName: true,
+            },
+          },
+        },
+      },
     },
   });
 
-  const missed = await tx.eventRecheck.updateMany({
+  const employees = await tx.user.findMany({
+    where: {
+      id: {
+        in: [...new Set(rechecksToActivate.map((recheck) => recheck.employeeId))],
+      },
+    },
+    select: {
+      id: true,
+      email: true,
+    },
+  });
+  const employeeEmailById = new Map(
+    employees.map((employee) => [employee.id, employee.email]),
+  );
+
+  for (const recheck of rechecksToActivate) {
+    const rawToken = generateRecheckToken();
+    const tokenHash = hashRecheckToken(rawToken);
+    const updateResult = await tx.eventRecheck.updateMany({
+      where: {
+        id: recheck.id,
+        status: RecheckStatus.SCHEDULED,
+        startsAt: {
+          lte: now,
+        },
+        expiresAt: {
+          gt: now,
+        },
+        submittedAt: null,
+        notificationSentAt: null,
+      },
+      data: {
+        status: RecheckStatus.PENDING,
+        tokenHash,
+        notificationSentAt: now,
+      },
+    });
+
+    if (updateResult.count !== 1) {
+      continue;
+    }
+
+    summary.activatedCount += 1;
+
+    const userEmail = employeeEmailById.get(recheck.employeeId);
+
+    const notificationResult = await sendRecheckNotification({
+      tx,
+      userId: recheck.employeeId,
+      userEmail: userEmail ?? "",
+      eventName: recheck.assignment.event.title,
+      locationName: recheck.assignment.event.locationName,
+      expiresAt: recheck.expiresAt,
+      recheckLink: buildRecheckLink({ appUrl, rawToken }),
+      now,
+      resendApiKey,
+      resendFromEmail,
+      sendEmail,
+    });
+
+    if (notificationResult.inAppCreated) {
+      summary.notifications.inAppCreatedCount += 1;
+    }
+
+    if (notificationResult.emailSent) {
+      summary.notifications.emailSentCount += 1;
+    }
+
+    if (notificationResult.emailSkipped) {
+      summary.notifications.emailSkippedCount += 1;
+    }
+
+    summary.notifications.warnings.push(...notificationResult.warnings);
+  }
+
+  const expiredRechecks = await tx.eventRecheck.findMany({
     where: {
       status: {
         in: [RecheckStatus.SCHEDULED, RecheckStatus.PENDING],
@@ -104,34 +261,44 @@ export async function processScheduledRechecksInTransaction(
       },
       submittedAt: null,
     },
-    data: {
-      status: RecheckStatus.MISSED,
-      completedAt: now,
+    select: {
+      id: true,
+      assignmentId: true,
     },
   });
+  const missedAssignmentIds: string[] = [];
 
-  if (missed.count > 0) {
-    const missedRechecks = await tx.eventRecheck.findMany({
+  for (const recheck of expiredRechecks) {
+    const updateResult = await tx.eventRecheck.updateMany({
       where: {
-        status: RecheckStatus.MISSED,
+        id: recheck.id,
+        status: {
+          in: [RecheckStatus.SCHEDULED, RecheckStatus.PENDING],
+        },
         expiresAt: {
           lte: now,
         },
         submittedAt: null,
       },
-      select: {
-        assignmentId: true,
+      data: {
+        status: RecheckStatus.MISSED,
+        completedAt: now,
       },
     });
-    const missedAssignmentIds = [
-      ...new Set(missedRechecks.map((recheck) => recheck.assignmentId)),
-    ];
 
-    if (missedAssignmentIds.length > 0) {
+    if (updateResult.count === 1) {
+      summary.missedCount += 1;
+      missedAssignmentIds.push(recheck.assignmentId);
+    }
+  }
+
+  if (missedAssignmentIds.length > 0) {
+    const uniqueMissedAssignmentIds = [...new Set(missedAssignmentIds)];
+
       await tx.eventAssignment.updateMany({
         where: {
           id: {
-            in: missedAssignmentIds,
+            in: uniqueMissedAssignmentIds,
           },
           status: AssignmentStatus.IN_PROGRESS,
         },
@@ -144,7 +311,7 @@ export async function processScheduledRechecksInTransaction(
       await tx.eventAssignment.updateMany({
         where: {
           id: {
-            in: missedAssignmentIds,
+            in: uniqueMissedAssignmentIds,
           },
           status: AssignmentStatus.PENDING,
         },
@@ -153,11 +320,7 @@ export async function processScheduledRechecksInTransaction(
           failureReason: "RECHECK_MISSED",
         },
       });
-    }
   }
 
-  return {
-    activatedCount: activated.count,
-    missedCount: missed.count,
-  };
+  return summary;
 }

@@ -69,14 +69,12 @@ export type RecheckScheduleInput = {
 };
 
 export type ScheduledRecheckToken = {
-  rawToken: string;
-  tokenHash: string;
   startsAt: Date;
   expiresAt: Date;
 };
 
 export type RecheckTokenState = {
-  tokenHash: string;
+  tokenHash: string | null;
   status: RecheckStatus;
   startsAt: Date;
   expiresAt: Date;
@@ -195,7 +193,7 @@ export function validateRecheckTokenState({
   recheck: RecheckTokenState;
   now: Date;
 }) {
-  if (!compareRecheckToken(rawToken, recheck.tokenHash)) {
+  if (!recheck.tokenHash || !compareRecheckToken(rawToken, recheck.tokenHash)) {
     throw new RecheckServiceError(
       404,
       "INVALID_RECHECK_TOKEN",
@@ -418,11 +416,7 @@ export function buildScheduledRecheckTokens(
     eventEndsAt: input.eventEndsAt,
     checkInAt: input.checkInAt,
   }).map((startsAt) => {
-    const rawToken = generateRecheckToken();
-
     return {
-      rawToken,
-      tokenHash: hashRecheckToken(rawToken),
       startsAt,
       expiresAt: calculateRecheckExpiry({
         startsAt,
@@ -458,7 +452,6 @@ export async function scheduleRechecksForAssignment(
       data: {
         assignmentId: input.assignmentId,
         employeeId: input.employeeId,
-        tokenHash: scheduledToken.tokenHash,
         startsAt: scheduledToken.startsAt,
         expiresAt: scheduledToken.expiresAt,
         status: RecheckStatus.SCHEDULED,
