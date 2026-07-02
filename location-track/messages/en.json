@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "title": "Location Attendance",
+    "description": "Location-based attendance and verification app."
+  },
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "arabic": "Arabic"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "home": {
+    "eyebrow": "i18n setup",
+    "title": "Location Attendance",
+    "description": "English and Arabic routing, message files, language switching, and LTR/RTL document direction are ready for the next implementation step.",
+    "componentsTitle": "Base components",
+    "componentsDescription": "Buttons, badges, inputs, cards, and loading placeholders now read from localized labels.",
+    "tokensTitle": "RTL-safe foundations",
+    "tokensDescription": "Layout uses document direction and logical spacing basics so Arabic can mirror cleanly.",
+    "inputLabel": "Sample input",
+    "inputPlaceholder": "Employee name",
+    "buttons": {
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "outline": "Outline",
+      "ghost": "Ghost",
+      "danger": "Danger"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "suspicious": "Suspicious",
+    "failed": "Failed",
+    "missed": "Missed",
+    "accepted": "Accepted",
+    "rejected": "Rejected"
+  }
+}

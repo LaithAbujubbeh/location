@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import "./globals.css";
+import {
+  getDirection,
+  getMessages,
+  isLocale,
+  locales,
+  type Locale,
+} from "@/lib/i18n";
+import "../globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,11 +20,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata: Metadata = {
-  title: "Location Attendance",
-  description: "Location-based attendance and verification app.",
-};
 
 const themeScript = `
 (() => {
@@ -36,23 +39,54 @@ const themeScript = `
 })();
 `;
 
-export default function RootLayout({
-  children,
-}: Readonly<{
+type LocaleLayoutProps = {
   children: React.ReactNode;
-}>) {
+  params: Promise<{ locale: string }>;
+};
+
+export async function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale: localeParam } = await params;
+  const locale = isLocale(localeParam) ? localeParam : "en";
+  const messages = await getMessages(locale);
+
+  return {
+    title: messages.metadata.title,
+    description: messages.metadata.description,
+  };
+}
+
+export default async function LocaleLayout({
+  children,
+  params,
+}: LocaleLayoutProps) {
+  const { locale: localeParam } = await params;
+
+  if (!isLocale(localeParam)) {
+    notFound();
+  }
+
+  const locale: Locale = localeParam;
+  const dir = getDirection(locale);
+
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={dir}
       data-theme="light"
       data-theme-mode="system"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="flex min-h-full flex-col">
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
