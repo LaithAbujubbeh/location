@@ -1,7 +1,7 @@
 import { UserRole } from "@prisma/client";
-import { headers } from "next/headers";
+import { headers } from "next/headers.js";
 
-import { auth } from "@/lib/auth";
+import { auth } from "./auth.ts";
 
 export { UserRole };
 
@@ -11,13 +11,14 @@ export const ROLES = {
 } as const;
 
 export class PermissionError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly code: string,
-    message: string,
-  ) {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(status: number, code: string, message: string) {
     super(message);
     this.name = "PermissionError";
+    this.status = status;
+    this.code = code;
   }
 }
 

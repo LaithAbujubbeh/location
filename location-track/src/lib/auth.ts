@@ -2,7 +2,7 @@ import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "./prisma.ts";
 
 export const auth = betterAuth({
   appName: "Location Attendance",

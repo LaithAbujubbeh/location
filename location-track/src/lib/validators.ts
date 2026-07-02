@@ -1,4 +1,4 @@
-import { DeviceStatus } from "@prisma/client";
+import { AssignmentStatus, DeviceStatus } from "@prisma/client";
 import { z } from "zod";
 
 const dateString = z
@@ -74,6 +74,17 @@ export const employeeEventListQuerySchema = z.object({
 
 export type EmployeeEventListQueryInput = z.infer<
   typeof employeeEventListQuerySchema
+>;
+
+export const adminEventTimelineQuerySchema = z.object({
+  page: paginationNumber(1, 10000),
+  pageSize: paginationNumber(20, 100),
+  status: z.enum(AssignmentStatus).optional(),
+  employeeId: z.string().trim().min(1).optional(),
+});
+
+export type AdminEventTimelineQueryInput = z.infer<
+  typeof adminEventTimelineQuerySchema
 >;
 
 export const employeeNotificationListQuerySchema = z.object({
