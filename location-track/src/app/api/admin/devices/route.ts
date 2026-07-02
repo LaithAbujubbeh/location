@@ -1,15 +1,12 @@
 import type { ZodError } from "zod";
 
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { privateNoStoreHeaders } from "@/lib/cache";
 import { PermissionError, requireAdmin } from "@/lib/permissions";
 import { adminDeviceListQuerySchema } from "@/lib/validators";
 import { listDevicesForAdmin } from "@/services/device.service";
 
 export const dynamic = "force-dynamic";
-
-const privateNoStoreHeaders = {
-  "Cache-Control": "private, no-store",
-};
 
 function formatValidationError(error: ZodError) {
   return error.issues

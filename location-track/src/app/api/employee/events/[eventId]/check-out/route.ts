@@ -1,6 +1,7 @@
 import type { ZodError } from "zod";
 
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { privateNoStoreHeaders } from "@/lib/cache";
 import { PermissionError, requireEmployeeOrAdmin } from "@/lib/permissions";
 import {
   consumeUserRateLimit,
@@ -17,10 +18,6 @@ import {
 } from "@/services/check-out.service";
 
 export const dynamic = "force-dynamic";
-
-const privateNoStoreHeaders = {
-  "Cache-Control": "private, no-store",
-};
 
 function formatValidationError(error: ZodError) {
   return error.issues

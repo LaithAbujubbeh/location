@@ -1,4 +1,5 @@
 import { apiError, apiSuccess } from "../../../../lib/api-response.ts";
+import { privateNoStoreHeaders } from "../../../../lib/cache.ts";
 import {
   isCronRequestAuthorized,
   processScheduledRechecks,
@@ -6,10 +7,6 @@ import {
 } from "../../../../services/recheck-cron.service.ts";
 
 export const dynamic = "force-dynamic";
-
-const privateNoStoreHeaders = {
-  "Cache-Control": "private, no-store",
-};
 
 type CronRechecksHandlerOptions = {
   cronSecret?: string | null;

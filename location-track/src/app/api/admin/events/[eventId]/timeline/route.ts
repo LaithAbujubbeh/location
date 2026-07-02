@@ -1,6 +1,7 @@
 import type { ZodError } from "zod";
 
 import { apiError, apiSuccess } from "../../../../../../lib/api-response.ts";
+import { privateNoStoreHeaders } from "../../../../../../lib/cache.ts";
 import {
   PermissionError,
   requireAdmin,
@@ -17,10 +18,6 @@ import {
 } from "../../../../../../services/event.service.ts";
 
 export const dynamic = "force-dynamic";
-
-const privateNoStoreHeaders = {
-  "Cache-Control": "private, no-store",
-};
 
 type AdminTimelineHandlerOptions = {
   requireAdminSession?: () => Promise<unknown>;

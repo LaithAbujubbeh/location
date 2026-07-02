@@ -1,15 +1,12 @@
 import type { ZodError } from "zod";
 
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { privateNoStoreHeaders } from "@/lib/cache";
 import { PermissionError, requireEmployee } from "@/lib/permissions";
 import { employeeNotificationListQuerySchema } from "@/lib/validators";
 import { listNotificationsForEmployee } from "@/services/notification.service";
 
 export const dynamic = "force-dynamic";
-
-const privateNoStoreHeaders = {
-  "Cache-Control": "private, no-store",
-};
 
 function formatValidationError(error: ZodError) {
   return error.issues
