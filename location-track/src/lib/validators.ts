@@ -1,3 +1,4 @@
+import { DeviceStatus } from "@prisma/client";
 import { z } from "zod";
 
 const dateString = z
@@ -74,3 +75,30 @@ export const employeeEventListQuerySchema = z.object({
 export type EmployeeEventListQueryInput = z.infer<
   typeof employeeEventListQuerySchema
 >;
+
+export const registerDeviceSchema = z.object({
+  deviceId: z.string().trim().uuid(),
+  label: z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .optional()
+    .transform((value) => value ?? null),
+});
+
+export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema>;
+
+export const adminDeviceListQuerySchema = z.object({
+  page: paginationNumber(1, 10000),
+  pageSize: paginationNumber(20, 100),
+  status: z.enum(DeviceStatus).optional(),
+});
+
+export type AdminDeviceListQueryInput = z.infer<
+  typeof adminDeviceListQuerySchema
+>;
+
+export const deviceRouteParamsSchema = z.object({
+  deviceId: z.string().trim().min(1),
+});
