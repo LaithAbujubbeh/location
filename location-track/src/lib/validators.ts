@@ -1,0 +1,53 @@
+import { z } from "zod";
+
+const dateString = z
+  .string()
+  .min(1)
+  .refine((value) => !Number.isNaN(Date.parse(value)), {
+    message: "Expected a valid ISO date string.",
+  })
+  .transform((value) => new Date(value));
+
+export const createEventSchema = z
+  .object({
+    name: z.string().trim().min(1).max(160),
+    locationName: z.string().trim().min(1).max(240),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    radiusMeters: z.number().int().min(1).max(50000),
+    startsAt: dateString,
+    endsAt: dateString,
+    employeeIds: z.array(z.string().trim().min(1)).min(1),
+    recheckCount: z.number().int().min(0).max(20).default(0),
+    recheckWindowMin: z.number().int().min(1).max(1440).optional(),
+    requirePhoto: z.boolean().default(false),
+    requireCheckout: z.boolean().default(true),
+  })
+  .superRefine((value, context) => {
+    if (value.endsAt <= value.startsAt) {
+      context.addIssue({
+        code: "custom",
+        path: ["endsAt"],
+        message: "endsAt must be after startsAt.",
+      });
+    }
+
+    if (new Set(value.employeeIds).size !== value.employeeIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["employeeIds"],
+        message: "employeeIds must not contain duplicates.",
+      });
+    }
+
+    if (value.recheckCount > 0 && !value.recheckWindowMin) {
+      context.addIssue({
+        code: "custom",
+        path: ["recheckWindowMin"],
+        message:
+          "recheckWindowMin is required when recheckCount is greater than 0.",
+      });
+    }
+  });
+
+export type CreateEventInput = z.infer<typeof createEventSchema>;
