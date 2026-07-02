@@ -191,10 +191,10 @@ model EventProof {
 model EventRecheck {
   id            String          @id @default(cuid())
   assignmentId  String
+  employeeId    String
   tokenHash     String          @unique
   status        RecheckStatus   @default(SCHEDULED)
-  scheduledAt   DateTime
-  availableFrom DateTime
+  startsAt      DateTime
   expiresAt     DateTime
   sentAt        DateTime?
   completedAt   DateTime?
@@ -204,7 +204,9 @@ model EventRecheck {
   proofs        EventProof[]
 
   @@index([assignmentId, status])
-  @@index([status, availableFrom])
+  @@index([assignmentId, startsAt])
+  @@index([employeeId, status])
+  @@index([status, startsAt])
   @@index([status, expiresAt])
 }
 

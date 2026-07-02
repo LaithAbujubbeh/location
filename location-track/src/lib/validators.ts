@@ -89,6 +89,25 @@ export const registerDeviceSchema = z.object({
 
 export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema>;
 
+export const locationPayloadSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  accuracyMeters: z.number().positive().max(10000),
+  gpsTimestamp: dateString,
+  deviceId: z.string().trim().uuid(),
+  photoUrl: z
+    .string()
+    .trim()
+    .url()
+    .max(2048)
+    .optional()
+    .transform((value) => value ?? null),
+});
+
+export const checkInPayloadSchema = locationPayloadSchema;
+
+export type CheckInPayloadInput = z.infer<typeof checkInPayloadSchema>;
+
 export const adminDeviceListQuerySchema = z.object({
   page: paginationNumber(1, 10000),
   pageSize: paginationNumber(20, 100),
@@ -101,4 +120,8 @@ export type AdminDeviceListQueryInput = z.infer<
 
 export const deviceRouteParamsSchema = z.object({
   deviceId: z.string().trim().min(1),
+});
+
+export const eventRouteParamsSchema = z.object({
+  eventId: z.string().trim().min(1),
 });
