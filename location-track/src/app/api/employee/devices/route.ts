@@ -2,7 +2,7 @@ import type { ZodError } from "zod";
 
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { privateNoStoreHeaders } from "@/lib/cache";
-import { PermissionError, requireUser } from "@/lib/permissions";
+import { PermissionError, requireEmployee } from "@/lib/permissions";
 import {
   consumeUserRateLimit,
   rateLimitPolicies,
@@ -24,7 +24,7 @@ function formatValidationError(error: ZodError) {
 
 export async function POST(request: Request) {
   try {
-    const session = await requireUser();
+    const session = await requireEmployee();
     const rateLimit = await consumeUserRateLimit({
       policy: rateLimitPolicies.deviceRegistration,
       userId: session.user.id,

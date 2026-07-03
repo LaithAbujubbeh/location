@@ -5,6 +5,7 @@ import {
   Prisma,
   ProofStatus,
   ProofType,
+  UserRole,
 } from "@prisma/client";
 
 import {
@@ -46,6 +47,18 @@ type CheckOutAssignmentState = {
     checkoutRequired: boolean;
   };
 };
+
+function assertEmployeeSession(session: AuthenticatedSession) {
+  if (session.user.role !== UserRole.EMPLOYEE) {
+    throw new CheckOutServiceError(
+      403,
+      "FORBIDDEN",
+      "Employee access is required.",
+    );
+  }
+
+  return session.user.id;
+}
 
 export type CheckOutResult = {
   assignment: {
@@ -234,7 +247,7 @@ export async function checkOutFromEvent({
   now?: Date;
 }): Promise<CheckOutResult> {
   const { prisma } = await import("../lib/prisma.ts");
-  const employeeId = session.user.id;
+  const employeeId = assertEmployeeSession(session);
 
   return prisma.$transaction((tx) =>
     checkOutFromEventInTransaction(tx, {

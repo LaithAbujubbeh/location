@@ -129,6 +129,19 @@ function formatDateForMessage(date: Date) {
   return date.toISOString();
 }
 
+function stripEmailHeaderControls(value: string) {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function buildRecheckNotificationContent({
   eventName,
   locationName,
@@ -140,10 +153,10 @@ function buildRecheckNotificationContent({
 >) {
   const locationText = locationName ? ` at ${locationName}` : "";
   const expiresAtText = formatDateForMessage(expiresAt);
-  const title = `Recheck required for ${eventName}`;
+  const title = stripEmailHeaderControls(`Recheck required for ${eventName}`);
   const message = `Please confirm you are still at ${eventName}${locationText} before ${expiresAtText}.`;
   const text = `${message}\n\nOpen your recheck link: ${recheckLink}`;
-  const html = `<p>${message}</p><p><a href="${recheckLink}">Open recheck</a></p>`;
+  const html = `<p>${escapeHtml(message)}</p><p><a href="${escapeHtml(recheckLink)}">Open recheck</a></p>`;
 
   return {
     title,
@@ -215,7 +228,7 @@ async function createInAppNotification(
       message: content.message,
       type: NotificationType.RECHECK,
       channel: NotificationChannel.IN_APP,
-      link: input.recheckLink,
+      link: null,
       createdAt: input.now,
     },
     select: {

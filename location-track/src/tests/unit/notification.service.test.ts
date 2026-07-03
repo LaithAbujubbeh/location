@@ -139,6 +139,40 @@ test(".vercel.app sender is skipped and in-app notification still succeeds", asy
   assert.equal(result.warnings[0].code, "EMAIL_SENDER_DOMAIN_NOT_ALLOWED");
 });
 
+test("recheck email HTML escapes event text and link attributes", async () => {
+  const sentEmails: Array<{ subject: string; text: string; html: string }> = [];
+  const tx = {
+    notification: {
+      create: async () => ({
+        id: "notification_1",
+      }),
+    },
+  };
+
+  const result = await sendRecheckNotification({
+    tx: tx as never,
+    userId: "employee_1",
+    userEmail: "employee@example.com",
+    eventName: `Site <script>alert("x")</script>\r\nBcc: attacker@example.com`,
+    locationName: `Office "A"`,
+    expiresAt: new Date("2026-07-10T12:15:00.000Z"),
+    recheckLink: `https://app.example.com/recheck/token" onclick="alert(1)`,
+    now: new Date("2026-07-10T12:00:00.000Z"),
+    resendApiKey: "resend_key",
+    resendFromEmail: "Attendance <attendance@example.com>",
+    sendEmail: async (email) => {
+      sentEmails.push(email);
+    },
+  });
+
+  assert.equal(result.emailSent, true);
+  assert.equal(sentEmails.length, 1);
+  assert.doesNotMatch(sentEmails[0].subject, /[\r\n]/);
+  assert.match(sentEmails[0].html, /&lt;script&gt;alert/);
+  assert.match(sentEmails[0].html, /&quot; onclick=&quot;alert\(1\)/);
+  assert.doesNotMatch(sentEmails[0].html, /<script>/);
+});
+
 test("env example does not hardcode a .vercel.app or fake sender email", () => {
   const envExample = readFileSync(".env.example", "utf8");
 

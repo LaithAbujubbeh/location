@@ -6,6 +6,7 @@ import { AssignmentStatus, RecheckStatus } from "@prisma/client";
 import { handleCronRechecksRequest } from "../../app/api/cron/rechecks/route.ts";
 import {
   isCronRequestAuthorized,
+  normalizeAppUrl,
   processScheduledRechecksInTransaction,
 } from "../../services/recheck-cron.service.ts";
 
@@ -121,19 +122,19 @@ test("in-app notification is created when a recheck becomes pending", async () =
   assert.equal(result.notifications.inAppCreatedCount, 1);
   assert.equal(notificationCreateCalls.length, 1);
   assert.deepEqual(
-    (notificationCreateCalls[0] as { data: { userId: string; link: string } })
+    (notificationCreateCalls[0] as { data: { userId: string; link: string | null } })
       .data.userId,
     "employee_1",
   );
-  assert.match(
-    (notificationCreateCalls[0] as { data: { link: string } }).data.link,
-    /^https:\/\/app\.example\.com\/recheck\/.+/,
+  assert.equal(
+    (notificationCreateCalls[0] as { data: { link: string | null } }).data.link,
+    null,
   );
 });
 
 test("email is sent when Resend env vars exist", async () => {
   const now = new Date("2026-07-10T12:00:00.000Z");
-  const sentEmails: unknown[] = [];
+  const sentEmails: Array<{ text: string; html: string }> = [];
   const { tx } = createCronTx({
     activationCandidates: [
       {
@@ -160,6 +161,7 @@ test("email is sent when Resend env vars exist", async () => {
   assert.equal(result.notifications.emailSentCount, 1);
   assert.equal(result.notifications.emailSkippedCount, 0);
   assert.equal(sentEmails.length, 1);
+  assert.match(sentEmails[0].text, /https:\/\/app\.example\.com\/recheck\/.+/);
 });
 
 test("missing Resend env vars do not crash cron", async () => {
@@ -291,7 +293,7 @@ test("notification is not sent twice when activation update does not win", async
 
 test("notificationSentAt and tokenHash are set while raw token is not stored", async () => {
   const now = new Date("2026-07-10T12:00:00.000Z");
-  const { tx, recheckUpdateManyCalls } = createCronTx({
+  const { tx, recheckUpdateManyCalls, notificationCreateCalls } = createCronTx({
     activationCandidates: [
       {
         id: "recheck_1",
@@ -319,6 +321,23 @@ test("notificationSentAt and tokenHash are set while raw token is not stored", a
   assert.match(activationUpdate.data.tokenHash, /^[a-f0-9]{64}$/);
   assert.equal(activationUpdate.data.notificationSentAt, now);
   assert.equal(activationUpdate.data.rawToken, undefined);
+  assert.equal(
+    (notificationCreateCalls[0] as { data: { link: string | null } }).data.link,
+    null,
+  );
+  assert.equal(
+    JSON.stringify(notificationCreateCalls).includes("recheck/"),
+    false,
+  );
+});
+
+test("app URL normalization only allows http and https origins", () => {
+  assert.equal(
+    normalizeAppUrl("https://user:pass@app.example.com/base/?secret=1#frag"),
+    "https://app.example.com/base",
+  );
+  assert.equal(normalizeAppUrl("javascript:alert(1)"), "http://localhost:3000");
+  assert.equal(normalizeAppUrl("not a url"), "http://localhost:3000");
 });
 
 test("expired scheduled and pending rechecks become missed", async () => {
@@ -451,6 +470,44 @@ test("cron secret is required", () => {
     }),
     true,
   );
+});
+
+test("cron route rejects an invalid secret", async () => {
+  let processed = false;
+  const response = await handleCronRechecksRequest(
+    new Request("http://localhost:3000/api/cron/rechecks", {
+      headers: {
+        Authorization: "Bearer wrong-secret",
+      },
+    }),
+    {
+      cronSecret: "test-secret",
+      processRechecks: async () => {
+        processed = true;
+
+        return {
+          activatedCount: 0,
+          missedCount: 0,
+          notifications: {
+            inAppCreatedCount: 0,
+            emailSentCount: 0,
+            emailSkippedCount: 0,
+            warnings: [],
+          },
+        };
+      },
+    },
+  );
+
+  assert.equal(response.status, 401);
+  assert.equal(processed, false);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "UNAUTHORIZED",
+      message: "Cron authorization failed.",
+    },
+  });
 });
 
 test("cron route returns the processing summary", async () => {

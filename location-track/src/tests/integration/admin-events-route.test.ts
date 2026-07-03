@@ -142,6 +142,40 @@ test("non-admin cannot create event", async () => {
   assert.equal(createCalled, false);
 });
 
+test("missing admin session returns 401", async () => {
+  let createCalled = false;
+
+  const response = await handleAdminCreateEventRequest(
+    jsonRequest(validCreateEventBody),
+    {
+      requireAdminSession: async () => {
+        throw new PermissionError(
+          401,
+          "UNAUTHORIZED",
+          "Authentication is required.",
+        );
+      },
+      consumeRateLimit: async () => {
+        throw new Error("rate limit should not run without a session");
+      },
+      createEvent: async () => {
+        createCalled = true;
+        throw new Error("event should not be created");
+      },
+    },
+  );
+
+  assert.equal(response.status, 401);
+  assert.equal(createCalled, false);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "UNAUTHORIZED",
+      message: "Authentication is required.",
+    },
+  });
+});
+
 test("rate-limited admin create event request returns 429", async () => {
   const response = await handleAdminCreateEventRequest(
     jsonRequest(validCreateEventBody),

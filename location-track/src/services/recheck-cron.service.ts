@@ -82,6 +82,30 @@ export function isCronRequestAuthorized({
   return safeEqual(providedSecret, expectedSecret);
 }
 
+export function normalizeAppUrl(appUrl: string | null | undefined) {
+  const fallbackUrl = "http://localhost:3000";
+  const configuredUrl = appUrl?.trim() || fallbackUrl;
+
+  try {
+    const url = new URL(configuredUrl);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return fallbackUrl;
+    }
+
+    url.username = "";
+    url.password = "";
+    url.search = "";
+    url.hash = "";
+
+    const path = url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, "");
+
+    return `${url.origin}${path}`;
+  } catch {
+    return fallbackUrl;
+  }
+}
+
 export async function processScheduledRechecks({
   now = new Date(),
   appUrl = process.env.APP_URL,
@@ -109,12 +133,7 @@ function buildRecheckLink({
   appUrl: string | null | undefined;
   rawToken: string;
 }) {
-  const baseUrl = appUrl?.trim() || "http://localhost:3000";
-  const normalizedBaseUrl = baseUrl.endsWith("/")
-    ? baseUrl.slice(0, -1)
-    : baseUrl;
-
-  return `${normalizedBaseUrl}/recheck/${rawToken}`;
+  return `${normalizeAppUrl(appUrl)}/recheck/${encodeURIComponent(rawToken)}`;
 }
 
 function emptySummary(): ProcessRechecksSummary {

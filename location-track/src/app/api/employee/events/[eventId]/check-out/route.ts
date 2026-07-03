@@ -1,23 +1,44 @@
 import type { ZodError } from "zod";
 
-import { apiError, apiSuccess } from "@/lib/api-response";
-import { privateNoStoreHeaders } from "@/lib/cache";
-import { PermissionError, requireEmployeeOrAdmin } from "@/lib/permissions";
+import { apiError, apiSuccess } from "../../../../../../lib/api-response.ts";
+import { privateNoStoreHeaders } from "../../../../../../lib/cache.ts";
+import {
+  PermissionError,
+  requireEmployee,
+} from "../../../../../../lib/permissions.ts";
 import {
   consumeUserRateLimit,
   rateLimitPolicies,
   rateLimitResponse,
-} from "@/lib/rate-limit";
+} from "../../../../../../lib/rate-limit.ts";
 import {
   checkOutPayloadSchema,
+  type CheckOutPayloadInput,
   eventRouteParamsSchema,
-} from "@/lib/validators";
+} from "../../../../../../lib/validators.ts";
 import {
   checkOutFromEvent,
   CheckOutServiceError,
-} from "@/services/check-out.service";
+  type CheckOutResult,
+} from "../../../../../../services/check-out.service.ts";
 
 export const dynamic = "force-dynamic";
+
+type CheckOutRouteDeps = {
+  requireEmployeeSession: typeof requireEmployee;
+  consumeRateLimit: typeof consumeUserRateLimit;
+  checkOut: (input: {
+    eventId: string;
+    session: Awaited<ReturnType<typeof requireEmployee>>;
+    input: CheckOutPayloadInput;
+  }) => Promise<CheckOutResult>;
+};
+
+const defaultDeps: CheckOutRouteDeps = {
+  requireEmployeeSession: requireEmployee,
+  consumeRateLimit: consumeUserRateLimit,
+  checkOut: checkOutFromEvent,
+};
 
 function formatValidationError(error: ZodError) {
   return error.issues
@@ -28,12 +49,13 @@ function formatValidationError(error: ZodError) {
     .join("; ");
 }
 
-export async function POST(
+export async function handleEmployeeCheckOutRequest(
   request: Request,
   context: { params: Promise<{ eventId: string }> },
+  deps: CheckOutRouteDeps = defaultDeps,
 ) {
   try {
-    const session = await requireEmployeeOrAdmin();
+    const session = await deps.requireEmployeeSession();
     const params = eventRouteParamsSchema.safeParse(await context.params);
 
     if (!params.success) {
@@ -47,7 +69,7 @@ export async function POST(
       );
     }
 
-    const rateLimit = await consumeUserRateLimit({
+    const rateLimit = await deps.consumeRateLimit({
       policy: rateLimitPolicies.checkOutSubmit,
       userId: session.user.id,
     });
@@ -81,7 +103,7 @@ export async function POST(
       );
     }
 
-    const result = await checkOutFromEvent({
+    const result = await deps.checkOut({
       eventId: params.data.eventId,
       session,
       input: parsed.data,
@@ -109,4 +131,11 @@ export async function POST(
       headers: privateNoStoreHeaders,
     });
   }
+}
+
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ eventId: string }> },
+) {
+  return handleEmployeeCheckOutRequest(request, context);
 }
