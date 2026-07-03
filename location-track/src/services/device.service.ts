@@ -168,12 +168,15 @@ export async function getOrCreateUserDevice({
         return registrationResult(updatedDevice, false, false);
       }
 
-      const existingDeviceCount = await tx.userDevice.count({
+      const existingUserDevice = await tx.userDevice.findFirst({
         where: {
           userId,
         },
+        select: {
+          id: true,
+        },
       });
-      const shouldTrustDevice = existingDeviceCount === 0;
+      const shouldTrustDevice = !existingUserDevice;
 
       const createdDevice = await tx.userDevice.create({
         data: {
@@ -247,19 +250,23 @@ export async function listDevicesForAdmin({
     }),
   ]);
 
-  const users = await prisma.user.findMany({
-    where: {
-      id: {
-        in: [...new Set(devices.map((device) => device.userId))],
-      },
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-    },
-  });
+  const userIds = [...new Set(devices.map((device) => device.userId))];
+  const users =
+    userIds.length > 0
+      ? await prisma.user.findMany({
+          where: {
+            id: {
+              in: userIds,
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        })
+      : [];
   const userById = new Map(users.map((user) => [user.id, user]));
   const totalPages = Math.ceil(total / query.pageSize);
 

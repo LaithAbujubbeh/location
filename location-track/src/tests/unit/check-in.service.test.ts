@@ -154,21 +154,21 @@ function createCheckInTx({
     },
     eventRecheck: {
       count: async () => 0,
-      create: async ({
+      createMany: async ({
         data,
       }: {
-        data: {
+        data: Array<{
           assignmentId: string;
           employeeId: string;
           startsAt: Date;
           expiresAt: Date;
           status: RecheckStatus;
-        };
+        }>;
       }) => {
-        recheckCreateData = data;
+        recheckCreateData = data[0] ?? null;
 
         return {
-          id: "recheck_1",
+          count: data.length,
         };
       },
     },

@@ -447,18 +447,15 @@ export async function scheduleRechecksForAssignment(
 
   const scheduledTokens = buildScheduledRecheckTokens(input);
 
-  for (const scheduledToken of scheduledTokens) {
-    await tx.eventRecheck.create({
-      data: {
+  if (scheduledTokens.length > 0) {
+    await tx.eventRecheck.createMany({
+      data: scheduledTokens.map((scheduledToken) => ({
         assignmentId: input.assignmentId,
         employeeId: input.employeeId,
         startsAt: scheduledToken.startsAt,
         expiresAt: scheduledToken.expiresAt,
         status: RecheckStatus.SCHEDULED,
-      },
-      select: {
-        id: true,
-      },
+      })),
     });
   }
 

@@ -104,10 +104,10 @@ test("does not create duplicate rechecks for the same assignment", async () => {
   const tx = {
     eventRecheck: {
       count: async () => 1,
-      create: async () => {
+      createMany: async () => {
         createCalls += 1;
 
-        return { id: "should-not-create" };
+        return { count: 0 };
       },
     },
   };
@@ -138,10 +138,14 @@ test("creates scheduled recheck records without raw tokens or token hashes", asy
   const tx = {
     eventRecheck: {
       count: async () => 0,
-      create: async ({ data }: { data: (typeof createdRecords)[number] }) => {
-        createdRecords.push(data);
+      createMany: async ({
+        data,
+      }: {
+        data: Array<(typeof createdRecords)[number]>;
+      }) => {
+        createdRecords.push(...data);
 
-        return { id: `recheck_${createdRecords.length}` };
+        return { count: data.length };
       },
     },
   };

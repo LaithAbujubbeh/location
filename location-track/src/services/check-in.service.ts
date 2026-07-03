@@ -45,6 +45,13 @@ type CheckInDecision = {
   notes: string | null;
 };
 
+type CheckInAssignmentResponseState = {
+  id: string;
+  status: AssignmentStatus;
+  checkedInAt: Date | null;
+  failureReason: string | null;
+};
+
 export type CheckInResult = {
   assignment: {
     id: string;
@@ -358,7 +365,12 @@ export async function checkInToEventInTransaction(
     },
   });
 
-  let updatedAssignment = assignment;
+  let updatedAssignment: CheckInAssignmentResponseState = {
+    id: assignment.id,
+    status: assignment.status,
+    checkedInAt: assignment.checkedInAt,
+    failureReason: assignment.failureReason,
+  };
 
   if (decision.assignmentStatus) {
     const updateResult = await tx.eventAssignment.updateMany({
@@ -394,33 +406,12 @@ export async function checkInToEventInTransaction(
       });
     }
 
-    const refetchedAssignment = await tx.eventAssignment.findUniqueOrThrow({
-      where: {
-        id: assignment.id,
-      },
-      select: {
-        id: true,
-        status: true,
-        checkedInAt: true,
-        failureReason: true,
-        event: {
-          select: {
-            id: true,
-            status: true,
-            latitude: true,
-            longitude: true,
-            radiusMeters: true,
-            startsAt: true,
-            endsAt: true,
-            photoRequired: true,
-            rechecksEnabled: true,
-            recheckCount: true,
-            recheckWindowMinutes: true,
-          },
-        },
-      },
-    });
-    updatedAssignment = refetchedAssignment;
+    updatedAssignment = {
+      id: assignment.id,
+      status: decision.assignmentStatus,
+      checkedInAt: now,
+      failureReason: null,
+    };
   } else {
     const refetchedAssignment = await tx.eventAssignment.update({
       where: {
@@ -434,21 +425,6 @@ export async function checkInToEventInTransaction(
         status: true,
         checkedInAt: true,
         failureReason: true,
-        event: {
-          select: {
-            id: true,
-            status: true,
-            latitude: true,
-            longitude: true,
-            radiusMeters: true,
-            startsAt: true,
-            endsAt: true,
-            photoRequired: true,
-            rechecksEnabled: true,
-            recheckCount: true,
-            recheckWindowMinutes: true,
-          },
-        },
       },
     });
     updatedAssignment = refetchedAssignment;

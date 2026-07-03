@@ -202,35 +202,35 @@ function createAttendanceFlowTx() {
     },
     eventRecheck: {
       count: async () => rechecks.length,
-      create: async ({
+      createMany: async ({
         data,
       }: {
-        data: {
+        data: Array<{
           assignmentId: string;
           employeeId: string;
           startsAt: Date;
           expiresAt: Date;
           status: RecheckStatus;
-        };
+        }>;
       }) => {
-        const recheck = {
-          id: `recheck_${rechecks.length + 1}`,
-          assignmentId: data.assignmentId,
-          employeeId: data.employeeId,
-          tokenHash: null,
-          status: data.status,
-          startsAt: data.startsAt,
-          expiresAt: data.expiresAt,
-          submittedAt: null,
-          completedAt: null,
-          notificationSentAt: null,
-          proofs: [],
-        };
-
-        rechecks.push(recheck);
+        for (const record of data) {
+          rechecks.push({
+            id: `recheck_${rechecks.length + 1}`,
+            assignmentId: record.assignmentId,
+            employeeId: record.employeeId,
+            tokenHash: null,
+            status: record.status,
+            startsAt: record.startsAt,
+            expiresAt: record.expiresAt,
+            submittedAt: null,
+            completedAt: null,
+            notificationSentAt: null,
+            proofs: [],
+          });
+        }
 
         return {
-          id: recheck.id,
+          count: data.length,
         };
       },
       findUnique: async ({

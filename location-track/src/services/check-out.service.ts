@@ -415,27 +415,14 @@ export async function checkOutFromEventInTransaction(
     );
   }
 
-  const updatedAssignment = await tx.eventAssignment.findUniqueOrThrow({
-    where: {
-      id: assignment.id,
-    },
-    select: {
-      id: true,
-      status: true,
-      checkedInAt: true,
-      checkedOutAt: true,
-      completedAt: true,
-      failureReason: true,
-    },
-  });
-
-  if (!updatedAssignment.checkedOutAt) {
-    throw new CheckOutServiceError(
-      500,
-      "CHECKOUT_NOT_FINALIZED",
-      "Checkout was not finalized.",
-    );
-  }
+  const updatedAssignment = {
+    id: assignment.id,
+    status: decision.assignmentStatus,
+    checkedInAt: assignment.checkedInAt,
+    checkedOutAt: now,
+    completedAt: now,
+    failureReason: decision.rejectionCode,
+  };
 
   return {
     assignment: {

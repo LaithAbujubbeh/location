@@ -178,6 +178,8 @@ model EventAssignment {
   @@unique([eventId, employeeId])
   @@index([employeeId, status])
   @@index([eventId, status])
+  @@index([eventId, createdAt, id])
+  @@index([eventId, checkedInAt, createdAt, id])
 }
 
 model EventProof {
@@ -200,6 +202,7 @@ model EventProof {
   recheck        EventRecheck?   @relation(fields: [recheckId], references: [id], onDelete: SetNull)
 
   @@index([assignmentId, type, createdAt])
+  @@index([assignmentId, createdAt, id])
   @@index([recheckId])
   @@index([status, createdAt])
   @@index([deviceId, createdAt])
@@ -245,6 +248,7 @@ model Notification {
   @@index([readAt])
   @@index([createdAt])
   @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt, id])
 }
 
 model UserDevice {
@@ -265,5 +269,6 @@ model UserDevice {
   @@unique([userId, deviceId])
   @@index([userId, status])
   @@index([status, createdAt])
+  @@index([createdAt, id])
   @@index([deviceId])
 }

@@ -159,6 +159,14 @@ export async function processScheduledRechecksInTransaction(
       submittedAt: null,
       notificationSentAt: null,
     },
+    orderBy: [
+      {
+        startsAt: "asc",
+      },
+      {
+        id: "asc",
+      },
+    ],
     select: {
       id: true,
       employeeId: true,
@@ -176,17 +184,23 @@ export async function processScheduledRechecksInTransaction(
     },
   });
 
-  const employees = await tx.user.findMany({
-    where: {
-      id: {
-        in: [...new Set(rechecksToActivate.map((recheck) => recheck.employeeId))],
-      },
-    },
-    select: {
-      id: true,
-      email: true,
-    },
-  });
+  const employeeIds = [
+    ...new Set(rechecksToActivate.map((recheck) => recheck.employeeId)),
+  ];
+  const employees =
+    employeeIds.length > 0
+      ? await tx.user.findMany({
+          where: {
+            id: {
+              in: employeeIds,
+            },
+          },
+          select: {
+            id: true,
+            email: true,
+          },
+        })
+      : [];
   const employeeEmailById = new Map(
     employees.map((employee) => [employee.id, employee.email]),
   );
@@ -261,6 +275,14 @@ export async function processScheduledRechecksInTransaction(
       },
       submittedAt: null,
     },
+    orderBy: [
+      {
+        expiresAt: "asc",
+      },
+      {
+        id: "asc",
+      },
+    ],
     select: {
       id: true,
       assignmentId: true,
