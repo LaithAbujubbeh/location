@@ -1,4 +1,10 @@
-import type { AssignmentStatus, EventStatus, RecheckStatus } from "@prisma/client";
+import type {
+  AssignmentStatus,
+  EventStatus,
+  ProofStatus,
+  ProofType,
+  RecheckStatus,
+} from "@prisma/client";
 
 import type { ApiErrorBody, ApiSuccessBody } from "@/lib/api-response";
 import type { Locale } from "@/lib/i18n";
@@ -59,6 +65,44 @@ export type EmployeeEventListResult = {
   };
 };
 
+export type EmployeeCheckInPayload = {
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number;
+  gpsTimestamp: string;
+  deviceId: string;
+  photoUrl?: string;
+};
+
+export type EmployeeCheckInResult = {
+  assignment: {
+    id: string;
+    status: AssignmentStatus;
+    checkedInAt: string | null;
+    failureReason: string | null;
+  };
+  proof: {
+    id: string;
+    type: ProofType;
+    status: ProofStatus;
+    latitude: number;
+    longitude: number;
+    accuracyMeters: number;
+    distanceMeters: number;
+    gpsTimestamp: string;
+    deviceId: string;
+    photoUrl: string | null;
+    rejectionCode: string | null;
+    notes: string | null;
+    createdAt: string;
+  };
+  verification: {
+    distanceMeters: number;
+    radiusMeters: number;
+    gpsAgeMs: number;
+  };
+};
+
 type ApiBody<T> = ApiSuccessBody<T> | ApiErrorBody;
 
 export class EmployeeEventApiError extends Error {
@@ -98,6 +142,38 @@ export function fetchEmployeeEventDetails(eventId: string) {
   return fetchEmployeeApi<EmployeeEventItem>(
     `/api/employee/events/${encodeURIComponent(eventId)}`,
   );
+}
+
+export async function submitEmployeeCheckIn({
+  eventId,
+  payload,
+}: {
+  eventId: string;
+  payload: EmployeeCheckInPayload;
+}) {
+  const response = await fetch(
+    `/api/employee/events/${encodeURIComponent(eventId)}/check-in`,
+    {
+      method: "POST",
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+  const body = (await response.json()) as ApiBody<EmployeeCheckInResult>;
+
+  if (!response.ok || !body.ok) {
+    const error = body.ok
+      ? { code: "REQUEST_FAILED", message: "Request failed." }
+      : body.error;
+
+    throw new EmployeeEventApiError(error.code, error.message, response.status);
+  }
+
+  return body.data;
 }
 
 export function formatDateTime(value: string, locale: Locale) {

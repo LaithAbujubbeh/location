@@ -116,6 +116,99 @@
         "retry": "حاول مرة أخرى",
         "submitRecheck": "إرسال إعادة التحقق"
       }
+    },
+    "checkIn": {
+      "title": "تسجيل الحضور",
+      "description": "التقط موقع GPS حديثا، وراجع الدقة، ثم أرسل إثبات الحضور.",
+      "backToEvent": "العودة إلى تفاصيل الفعالية",
+      "noLocation": "لم يتم تحديد الموقع",
+      "meters": "متر",
+      "devicePending": "جار تجهيز معرف الجهاز",
+      "emptyLocation": "التقط موقعك الحالي قبل مراجعة دقة GPS.",
+      "rechecksTitle": "مواعيد إعادة التحقق الثابتة",
+      "rechecksDescription": "تم تحديد هذه المواعيد من قبل المدير.",
+      "noRechecksTitle": "لا توجد إعادة تحقق مخططة",
+      "noRechecksDescription": "لا تحتوي هذه الفعالية على مواعيد إعادة تحقق ثابتة.",
+      "detailsErrorTitle": "تعذر تحميل تفاصيل الفعالية",
+      "detailsErrorDescription": "حدث الصفحة أو عد إلى تفاصيل الفعالية.",
+      "steps": {
+        "locationTitle": "التقاط الموقع الحالي",
+        "locationDescription": "استخدم GPS من المتصفح مع تفعيل الدقة العالية.",
+        "reviewTitle": "مراجعة دقة الموقع",
+        "reviewDescription": "تأكد من الإحداثيات والدقة ووقت الالتقاط.",
+        "photoTitle": "إضافة إثبات الصورة",
+        "photoDescription": "إثبات الصورة متاح فقط بعد إعداد مزود رفع الصور.",
+        "submitTitle": "إرسال تسجيل الحضور",
+        "submitDescription": "أرسل إثبات GPS هذا إلى نقطة تسجيل الحضور الآمنة."
+      },
+      "stepStatus": {
+        "pending": "قيد الانتظار",
+        "ready": "جاهز",
+        "complete": "مكتمل",
+        "blocked": "محظور"
+      },
+      "fields": {
+        "accuracyMeters": "الدقة",
+        "capturedAt": "وقت الالتقاط",
+        "checkIn": "وقت تسجيل الحضور",
+        "deviceId": "معرف الجهاز",
+        "distanceMeters": "المسافة",
+        "latitude": "خط العرض",
+        "longitude": "خط الطول",
+        "photoRequirement": "إثبات الصورة",
+        "proofStatus": "حالة الإثبات",
+        "radius": "النطاق المسموح",
+        "timeWindow": "الوقت"
+      },
+      "photo": {
+        "required": "مطلوب",
+        "notRequired": "غير مطلوب",
+        "notConfiguredOptional": "لم يتم إعداد رفع الصور بعد. هذه الفعالية لا تتطلب إثبات صورة، لذلك يمكنك المتابعة بدونه."
+      },
+      "warnings": {
+        "alreadyCheckedIn": "تم تسجيل حضور هذا التعيين مسبقا أو لم يعد مؤهلا لتسجيل الحضور.",
+        "eventNotActive": "الفعالية غير متاحة لتسجيل الحضور الآن.",
+        "locationRequired": "التقط موقعك الحالي قبل الإرسال.",
+        "photoUploadNotConfigured": "لم يتم إعداد رفع الصور بعد.",
+        "poorAccuracy": "دقة GPS ضعيفة. قد يضع الخادم هذا الإثبات قيد المراجعة أو يرفضه."
+      },
+      "locationErrors": {
+        "PERMISSION_DENIED": "تم رفض إذن الموقع. اسمح بالوصول إلى الموقع من المتصفح ثم حاول مرة أخرى.",
+        "POSITION_UNAVAILABLE": "الموقع غير متاح. تحقق من GPS أو Wi-Fi أو خدمات الموقع ثم حاول مرة أخرى.",
+        "TIMEOUT": "انتهت مهلة التقاط الموقع. اقترب من نافذة أو مكان مفتوح ثم حاول مرة أخرى.",
+        "UNSUPPORTED": "هذا المتصفح لا يدعم تحديد الموقع.",
+        "UNKNOWN": "تعذر التقاط الموقع. حاول مرة أخرى."
+      },
+      "backendErrors": {
+        "ALREADY_CHECKED_IN": "تم تسجيل الحضور مسبقا.",
+        "DEVICE_NOT_TRUSTED": "هذا الجهاز غير موثوق بعد. اطلب من المدير الموافقة عليه قبل تسجيل الحضور.",
+        "EVENT_NOT_OPEN_FOR_CHECK_IN": "الفعالية غير متاحة لتسجيل الحضور الآن.",
+        "FORBIDDEN": "ليست لديك صلاحية تسجيل الحضور.",
+        "PHOTO_REQUIRED": "إثبات الصورة مطلوب.",
+        "REQUEST_FAILED": "فشل تسجيل الحضور.",
+        "UNAUTHORIZED": "سجل الدخول مرة أخرى قبل تسجيل الحضور.",
+        "VALIDATION_ERROR": "لم يتم قبول بيانات تسجيل الحضور المرسلة."
+      },
+      "errors": {
+        "deviceUnavailable": "تعذر تجهيز معرف الجهاز في هذا المتصفح.",
+        "missingLocationOrDevice": "الموقع ومعرف الجهاز مطلوبان قبل تسجيل الحضور.",
+        "unknownSubmitError": "تعذر إرسال تسجيل الحضور. حاول مرة أخرى."
+      },
+      "actions": {
+        "backToDetails": "العودة إلى تفاصيل الفعالية",
+        "getLocation": "التقاط الموقع الحالي",
+        "refreshLocation": "تحديث الموقع",
+        "retry": "حاول مرة أخرى",
+        "submit": "إرسال تسجيل الحضور",
+        "submitting": "جار الإرسال"
+      },
+      "result": {
+        "acceptedDescription": "بدأ الحضور لهذه الفعالية.",
+        "notStarted": "لم يبدأ الحضور",
+        "rejectedDescription": "تم تسجيل الإثبات، لكن الحضور لم يبدأ.",
+        "suspiciousDescription": "بدأ الحضور، لكن هذا الإثبات يحتاج إلى مراجعة.",
+        "title": "تم إرسال تسجيل الحضور"
+      }
     }
   },
   "status": {

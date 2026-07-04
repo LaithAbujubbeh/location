@@ -116,6 +116,99 @@
         "retry": "Try again",
         "submitRecheck": "Submit Recheck"
       }
+    },
+    "checkIn": {
+      "title": "Check in",
+      "description": "Capture a fresh GPS location, review accuracy, and submit your attendance.",
+      "backToEvent": "Back to event details",
+      "noLocation": "Location not specified",
+      "meters": "meters",
+      "devicePending": "Preparing device ID",
+      "emptyLocation": "Capture your current location before reviewing GPS accuracy.",
+      "rechecksTitle": "Fixed recheck slots",
+      "rechecksDescription": "These recheck times were defined by the admin.",
+      "noRechecksTitle": "No rechecks planned",
+      "noRechecksDescription": "This event does not have fixed recheck slots.",
+      "detailsErrorTitle": "Event details could not be loaded",
+      "detailsErrorDescription": "Refresh the page or return to your event details.",
+      "steps": {
+        "locationTitle": "Get current location",
+        "locationDescription": "Use your browser GPS with high accuracy enabled.",
+        "reviewTitle": "Review location accuracy",
+        "reviewDescription": "Confirm the captured coordinates, accuracy, and timestamp.",
+        "photoTitle": "Add photo proof",
+        "photoDescription": "Photo proof is only available after an upload provider is configured.",
+        "submitTitle": "Submit check-in",
+        "submitDescription": "Send this GPS proof to the secure check-in endpoint."
+      },
+      "stepStatus": {
+        "pending": "Pending",
+        "ready": "Ready",
+        "complete": "Complete",
+        "blocked": "Blocked"
+      },
+      "fields": {
+        "accuracyMeters": "Accuracy",
+        "capturedAt": "Captured",
+        "checkIn": "Check-in time",
+        "deviceId": "Device ID",
+        "distanceMeters": "Distance",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "photoRequirement": "Photo proof",
+        "proofStatus": "Proof status",
+        "radius": "Allowed radius",
+        "timeWindow": "Time"
+      },
+      "photo": {
+        "required": "Required",
+        "notRequired": "Not required",
+        "notConfiguredOptional": "Photo upload is not configured yet. This event does not require photo proof, so you can continue without it."
+      },
+      "warnings": {
+        "alreadyCheckedIn": "This assignment is already checked in or is no longer eligible for check-in.",
+        "eventNotActive": "Event is not active for check-in right now.",
+        "locationRequired": "Capture your current location before submitting.",
+        "photoUploadNotConfigured": "Photo upload is not configured yet.",
+        "poorAccuracy": "GPS accuracy is poor. The backend may mark this proof as suspicious or reject it."
+      },
+      "locationErrors": {
+        "PERMISSION_DENIED": "Location permission was denied. Allow location access in your browser and try again.",
+        "POSITION_UNAVAILABLE": "Location is unavailable. Check GPS, Wi-Fi, or mobile location services and try again.",
+        "TIMEOUT": "Location capture timed out. Move near a window or open area and try again.",
+        "UNSUPPORTED": "This browser does not support geolocation.",
+        "UNKNOWN": "Location could not be captured. Try again."
+      },
+      "backendErrors": {
+        "ALREADY_CHECKED_IN": "Already checked in.",
+        "DEVICE_NOT_TRUSTED": "This device is not trusted yet. Ask an admin to approve it before checking in.",
+        "EVENT_NOT_OPEN_FOR_CHECK_IN": "Event is not active for check-in right now.",
+        "FORBIDDEN": "You do not have permission to check in.",
+        "PHOTO_REQUIRED": "Photo proof is required.",
+        "REQUEST_FAILED": "Check-in failed.",
+        "UNAUTHORIZED": "Sign in again before checking in.",
+        "VALIDATION_ERROR": "The submitted check-in data was not accepted."
+      },
+      "errors": {
+        "deviceUnavailable": "Device ID could not be prepared in this browser.",
+        "missingLocationOrDevice": "Location and device ID are required before check-in.",
+        "unknownSubmitError": "Check-in could not be submitted. Try again."
+      },
+      "actions": {
+        "backToDetails": "Back to event details",
+        "getLocation": "Get current location",
+        "refreshLocation": "Refresh location",
+        "retry": "Try again",
+        "submit": "Submit check-in",
+        "submitting": "Submitting"
+      },
+      "result": {
+        "acceptedDescription": "Attendance has started for this event.",
+        "notStarted": "Attendance not started",
+        "rejectedDescription": "The proof was recorded, but attendance did not start.",
+        "suspiciousDescription": "Attendance has started, but this proof needs review.",
+        "title": "Check-in submitted"
+      }
     }
   },
   "status": {
