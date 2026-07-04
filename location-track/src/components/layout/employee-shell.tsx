@@ -47,7 +47,7 @@ export function EmployeeShell({
 
   return (
     <div className="min-h-dvh overflow-x-clip bg-background text-foreground">
-      <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col bg-background">
+      <div className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col bg-background">
         <header className="sticky top-0 z-20 border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5">
           <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
             <Link className="grid min-w-0 gap-0.5" href={eventsHref}>
@@ -85,13 +85,15 @@ export function EmployeeShell({
           </div>
         </header>
 
-        <main className="flex-1 px-4 pb-28 pt-5 sm:px-5">{children}</main>
+        <main className="flex-1 px-4 pb-28 pt-5 sm:px-5 lg:px-6 xl:px-8">
+          {children}
+        </main>
 
         <nav
           aria-label={labels.areaLabel}
           className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface-elevated/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[var(--shadow-md)] backdrop-blur"
         >
-          <div className="mx-auto w-full max-w-2xl">
+          <div className="mx-auto w-full max-w-7xl">
             <Link
               aria-current="page"
               className="flex h-11 items-center justify-center rounded-md bg-primary text-sm font-medium text-on-primary shadow-[var(--shadow-sm)]"
