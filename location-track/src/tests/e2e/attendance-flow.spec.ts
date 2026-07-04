@@ -50,8 +50,13 @@ function createAttendanceFlowTx() {
     photoRequired: false,
     checkoutRequired: true,
     rechecksEnabled: true,
-    recheckCount: 1,
-    recheckWindowMinutes: 15,
+    recheckSlots: [
+      {
+        id: "slot_e2e_1",
+        startsAt: new Date("2026-07-10T10:30:00.000Z"),
+        expiresAt: new Date("2026-07-10T10:45:00.000Z"),
+      },
+    ],
     createdByUserId: adminId,
     createdAt: new Date("2026-07-10T08:00:00.000Z"),
   };
@@ -92,6 +97,7 @@ function createAttendanceFlowTx() {
   const rechecks: Array<{
     id: string;
     assignmentId: string;
+    slotId: string | null;
     employeeId: string;
     tokenHash: string | null;
     status: RecheckStatus;
@@ -201,12 +207,12 @@ function createAttendanceFlowTx() {
       findMany: async () => proofs,
     },
     eventRecheck: {
-      count: async () => rechecks.length,
       createMany: async ({
         data,
       }: {
         data: Array<{
           assignmentId: string;
+          slotId: string;
           employeeId: string;
           startsAt: Date;
           expiresAt: Date;
@@ -217,6 +223,7 @@ function createAttendanceFlowTx() {
           rechecks.push({
             id: `recheck_${rechecks.length + 1}`,
             assignmentId: record.assignmentId,
+            slotId: record.slotId,
             employeeId: record.employeeId,
             tokenHash: null,
             status: record.status,
@@ -313,8 +320,12 @@ test("admin to employee attendance flow covers check-in, recheck, checkout, and 
       startsAt: "2026-07-10T09:00:00.000Z",
       endsAt: "2026-07-10T12:00:00.000Z",
       employeeIds: [employeeId],
-      recheckCount: 1,
-      recheckWindowMin: 15,
+      recheckSlots: [
+        {
+          startsAt: "2026-07-10T10:30:00.000Z",
+          expiresAt: "2026-07-10T10:45:00.000Z",
+        },
+      ],
       requirePhoto: false,
       requireCheckout: true,
     }),
@@ -346,8 +357,11 @@ test("admin to employee attendance flow covers check-in, recheck, checkout, and 
           status: EventStatus.ACTIVE,
           requirePhoto: input.requirePhoto,
           requireCheckout: input.requireCheckout,
-          recheckCount: input.recheckCount,
-          recheckWindowMin: input.recheckWindowMin ?? null,
+          recheckSlots: input.recheckSlots.map((slot, index) => ({
+            id: `slot_e2e_${index + 1}`,
+            startsAt: slot.startsAt.toISOString(),
+            expiresAt: slot.expiresAt.toISOString(),
+          })),
           createdByUserId,
           createdAt: "2026-07-10T08:00:00.000Z",
         },

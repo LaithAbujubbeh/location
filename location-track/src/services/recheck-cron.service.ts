@@ -7,20 +7,13 @@ import {
   generateRecheckToken,
   hashRecheckToken,
 } from "./recheck.service.ts";
-import {
-  sendRecheckNotification,
-  type EmailSendFn,
-  type NotificationWarning,
-} from "./notification.service.ts";
+import { sendRecheckNotification } from "./notification.service.ts";
 
 export type ProcessRechecksSummary = {
   activatedCount: number;
   missedCount: number;
   notifications: {
     inAppCreatedCount: number;
-    emailSentCount: number;
-    emailSkippedCount: number;
-    warnings: NotificationWarning[];
   };
 };
 
@@ -32,10 +25,6 @@ export type CronAuthorizationInput = {
 
 export type ProcessScheduledRechecksOptions = {
   now?: Date;
-  appUrl?: string | null;
-  resendApiKey?: string | null;
-  resendFromEmail?: string | null;
-  sendEmail?: EmailSendFn;
 };
 
 function safeEqual(left: string, right: string) {
@@ -82,58 +71,16 @@ export function isCronRequestAuthorized({
   return safeEqual(providedSecret, expectedSecret);
 }
 
-export function normalizeAppUrl(appUrl: string | null | undefined) {
-  const fallbackUrl = "http://localhost:3000";
-  const configuredUrl = appUrl?.trim() || fallbackUrl;
-
-  try {
-    const url = new URL(configuredUrl);
-
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return fallbackUrl;
-    }
-
-    url.username = "";
-    url.password = "";
-    url.search = "";
-    url.hash = "";
-
-    const path = url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, "");
-
-    return `${url.origin}${path}`;
-  } catch {
-    return fallbackUrl;
-  }
-}
-
 export async function processScheduledRechecks({
   now = new Date(),
-  appUrl = process.env.APP_URL,
-  resendApiKey = process.env.RESEND_API_KEY,
-  resendFromEmail = process.env.RESEND_FROM_EMAIL,
-  sendEmail,
 }: ProcessScheduledRechecksOptions = {}): Promise<ProcessRechecksSummary> {
   const { prisma } = await import("../lib/prisma.ts");
 
   return prisma.$transaction((tx) =>
     processScheduledRechecksInTransaction(tx, {
       now,
-      appUrl,
-      resendApiKey,
-      resendFromEmail,
-      sendEmail,
     }),
   );
-}
-
-function buildRecheckLink({
-  appUrl,
-  rawToken,
-}: {
-  appUrl: string | null | undefined;
-  rawToken: string;
-}) {
-  return `${normalizeAppUrl(appUrl)}/recheck/${encodeURIComponent(rawToken)}`;
 }
 
 function emptySummary(): ProcessRechecksSummary {
@@ -142,9 +89,6 @@ function emptySummary(): ProcessRechecksSummary {
     missedCount: 0,
     notifications: {
       inAppCreatedCount: 0,
-      emailSentCount: 0,
-      emailSkippedCount: 0,
-      warnings: [],
     },
   };
 }
@@ -153,22 +97,16 @@ export async function processScheduledRechecksInTransaction(
   tx: Prisma.TransactionClient,
   {
     now,
-    appUrl,
-    resendApiKey,
-    resendFromEmail,
-    sendEmail,
   }: {
     now: Date;
-    appUrl?: string | null;
-    resendApiKey?: string | null;
-    resendFromEmail?: string | null;
-    sendEmail?: EmailSendFn;
   },
 ): Promise<ProcessRechecksSummary> {
   const summary = emptySummary();
   const rechecksToActivate = await tx.eventRecheck.findMany({
     where: {
-      status: RecheckStatus.SCHEDULED,
+      status: {
+        in: [RecheckStatus.SCHEDULED, RecheckStatus.PENDING],
+      },
       startsAt: {
         lte: now,
       },
@@ -176,6 +114,7 @@ export async function processScheduledRechecksInTransaction(
         gt: now,
       },
       submittedAt: null,
+      tokenHash: null,
       notificationSentAt: null,
     },
     orderBy: [
@@ -203,34 +142,15 @@ export async function processScheduledRechecksInTransaction(
     },
   });
 
-  const employeeIds = [
-    ...new Set(rechecksToActivate.map((recheck) => recheck.employeeId)),
-  ];
-  const employees =
-    employeeIds.length > 0
-      ? await tx.user.findMany({
-          where: {
-            id: {
-              in: employeeIds,
-            },
-          },
-          select: {
-            id: true,
-            email: true,
-          },
-        })
-      : [];
-  const employeeEmailById = new Map(
-    employees.map((employee) => [employee.id, employee.email]),
-  );
-
   for (const recheck of rechecksToActivate) {
     const rawToken = generateRecheckToken();
     const tokenHash = hashRecheckToken(rawToken);
     const updateResult = await tx.eventRecheck.updateMany({
       where: {
         id: recheck.id,
-        status: RecheckStatus.SCHEDULED,
+        status: {
+          in: [RecheckStatus.SCHEDULED, RecheckStatus.PENDING],
+        },
         startsAt: {
           lte: now,
         },
@@ -238,6 +158,7 @@ export async function processScheduledRechecksInTransaction(
           gt: now,
         },
         submittedAt: null,
+        tokenHash: null,
         notificationSentAt: null,
       },
       data: {
@@ -253,35 +174,18 @@ export async function processScheduledRechecksInTransaction(
 
     summary.activatedCount += 1;
 
-    const userEmail = employeeEmailById.get(recheck.employeeId);
-
     const notificationResult = await sendRecheckNotification({
       tx,
       userId: recheck.employeeId,
-      userEmail: userEmail ?? "",
       eventName: recheck.assignment.event.title,
       locationName: recheck.assignment.event.locationName,
       expiresAt: recheck.expiresAt,
-      recheckLink: buildRecheckLink({ appUrl, rawToken }),
       now,
-      resendApiKey,
-      resendFromEmail,
-      sendEmail,
     });
 
     if (notificationResult.inAppCreated) {
       summary.notifications.inAppCreatedCount += 1;
     }
-
-    if (notificationResult.emailSent) {
-      summary.notifications.emailSentCount += 1;
-    }
-
-    if (notificationResult.emailSkipped) {
-      summary.notifications.emailSkippedCount += 1;
-    }
-
-    summary.notifications.warnings.push(...notificationResult.warnings);
   }
 
   const expiredRechecks = await tx.eventRecheck.findMany({

@@ -8,17 +8,15 @@ test.use({
   permissions: ["geolocation"],
 });
 
-test("localized app shell supports theme, RTL switching, and mocked geolocation", async ({
+test("localized login shell supports theme, RTL switching, and mocked geolocation", async ({
   page,
 }) => {
-  await page.goto("/en");
+  await page.goto("/en/login");
 
   await expect(page).toHaveTitle(/Location Attendance/);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
-  await expect(
-    page.getByRole("heading", { name: "Location Attendance" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
   await page.getByRole("button", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -45,7 +43,50 @@ test("localized app shell supports theme, RTL switching, and mocked geolocation"
   expect(geolocation.longitude).toBeCloseTo(35.9078, 5);
 
   await page.getByRole("button", { name: "Arabic" }).click();
-  await expect(page).toHaveURL(/\/ar$/);
+  await expect(page).toHaveURL(/\/ar\/login$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+});
+
+test("protected areas redirect anonymous users to localized login", async ({
+  page,
+}) => {
+  await page.goto("/en/admin/events");
+
+  await expect(page).toHaveURL(/\/en\/login\?next=%2Fen%2Fadmin%2Fevents$/);
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+
+  await page.goto("/ar/employee/events");
+
+  await expect(page).toHaveURL(
+    /\/ar\/login\?next=%2Far%2Femployee%2Fevents$/,
+  );
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(
+    page.getByRole("heading", { name: "تسجيل الدخول" }),
+  ).toBeVisible();
+});
+
+test("login shell has no horizontal overflow on phone, tablet, and desktop", async ({
+  page,
+}) => {
+  const viewports = [
+    { width: 360, height: 740 },
+    { width: 768, height: 1024 },
+    { width: 1280, height: 800 },
+  ];
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+
+    for (const locale of ["en", "ar"] as const) {
+      await page.goto(`/${locale}/login`);
+
+      const hasHorizontalOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth,
+      );
+
+      expect(hasHorizontalOverflow).toBe(false);
+    }
+  }
 });

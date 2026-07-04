@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomInt, timingSafeEqual } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 
 import {
   AssignmentStatus,
@@ -20,9 +20,6 @@ import type { AuthenticatedSession } from "../lib/permissions.ts";
 import type { RecheckSubmitPayloadInput } from "../lib/validators.ts";
 
 const RECHECK_TOKEN_BYTES = 32;
-const MINUTE_IN_MS = 60_000;
-
-type RandomInt = (maxExclusive: number) => number;
 
 const OPEN_RECHECK_STATUSES = new Set<RecheckStatus>([
   RecheckStatus.SCHEDULED,
@@ -49,28 +46,24 @@ export class RecheckServiceError extends Error {
   }
 }
 
-export type GenerateRandomRecheckTimesArgs = {
-  recheckCount: number;
-  recheckWindowMinutes: number | null;
-  eventStartsAt: Date;
-  eventEndsAt: Date;
-  checkInAt: Date;
-  randomInt?: RandomInt;
-};
-
 export type RecheckScheduleInput = {
   assignmentId: string;
   employeeId: string;
-  eventStartsAt: Date;
-  eventEndsAt: Date;
   checkInAt: Date;
-  recheckCount: number;
-  recheckWindowMinutes: number | null;
+  recheckSlots: RecheckScheduleSlotInput[];
+};
+
+export type RecheckScheduleSlotInput = {
+  id: string;
+  startsAt: Date;
+  expiresAt: Date;
 };
 
 export type ScheduledRecheckToken = {
+  slotId: string;
   startsAt: Date;
   expiresAt: Date;
+  status: RecheckStatus;
 };
 
 export type RecheckTokenState = {
@@ -349,117 +342,73 @@ export function decideRecheckProof({
   };
 }
 
-export function calculateRecheckExpiry({
-  startsAt,
-  eventEndsAt,
-  recheckWindowMinutes,
-}: {
-  startsAt: Date;
-  eventEndsAt: Date;
-  recheckWindowMinutes: number;
-}) {
-  const expiresAtMs = startsAt.getTime() + recheckWindowMinutes * MINUTE_IN_MS;
-
-  return new Date(Math.min(expiresAtMs, eventEndsAt.getTime()));
-}
-
-export function generateRandomRecheckTimes({
-  recheckCount,
-  recheckWindowMinutes,
-  eventStartsAt,
-  eventEndsAt,
-  checkInAt,
-  randomInt: getRandomInt = randomInt,
-}: GenerateRandomRecheckTimesArgs) {
-  if (recheckCount <= 0 || !recheckWindowMinutes) {
-    return [];
-  }
-
-  const windowMs = recheckWindowMinutes * MINUTE_IN_MS;
-  const earliestStartMs = Math.max(
-    eventStartsAt.getTime(),
-    checkInAt.getTime(),
-  );
-  const latestStartMs = eventEndsAt.getTime() - windowMs;
-
-  if (latestStartMs < earliestStartMs) {
-    return [];
-  }
-
-  const availableSlots = latestStartMs - earliestStartMs + 1;
-  const count = Math.min(recheckCount, availableSlots);
-
-  return Array.from({ length: count }, (_, index) => {
-    const bucketStart =
-      earliestStartMs + Math.floor((index * availableSlots) / count);
-    const bucketEndExclusive =
-      earliestStartMs + Math.floor(((index + 1) * availableSlots) / count);
-    const bucketSize = Math.max(1, bucketEndExclusive - bucketStart);
-
-    return new Date(bucketStart + getRandomInt(bucketSize));
-  }).sort((left, right) => left.getTime() - right.getTime());
-}
-
-export function buildScheduledRecheckTokens(
+export function buildScheduledRecheckTokensFromSlots(
   input: RecheckScheduleInput,
 ): ScheduledRecheckToken[] {
-  const recheckWindowMinutes = input.recheckWindowMinutes;
-
-  if (!recheckWindowMinutes) {
-    return [];
-  }
-
-  return generateRandomRecheckTimes({
-    recheckCount: input.recheckCount,
-    recheckWindowMinutes,
-    eventStartsAt: input.eventStartsAt,
-    eventEndsAt: input.eventEndsAt,
-    checkInAt: input.checkInAt,
-  }).map((startsAt) => {
-    return {
-      startsAt,
-      expiresAt: calculateRecheckExpiry({
-        startsAt,
-        eventEndsAt: input.eventEndsAt,
-        recheckWindowMinutes,
-      }),
-    };
-  });
+  return input.recheckSlots
+    .filter((slot) => slot.expiresAt > input.checkInAt)
+    .map((slot) => ({
+      slotId: slot.id,
+      startsAt: slot.startsAt,
+      expiresAt: slot.expiresAt,
+      status:
+        slot.startsAt <= input.checkInAt
+          ? RecheckStatus.PENDING
+          : RecheckStatus.SCHEDULED,
+    }));
 }
 
 export async function scheduleRechecksForAssignment(
   tx: Prisma.TransactionClient,
   input: RecheckScheduleInput,
 ) {
-  if (input.recheckCount <= 0) {
+  if (input.recheckSlots.length === 0) {
     return [];
   }
 
-  const existingRechecks = await tx.eventRecheck.count({
+  const scheduledTokens = buildScheduledRecheckTokensFromSlots(input);
+
+  if (scheduledTokens.length === 0) {
+    return [];
+  }
+
+  const existingRechecks = await tx.eventRecheck.findMany({
     where: {
       assignmentId: input.assignmentId,
+      slotId: {
+        in: scheduledTokens.map((scheduledToken) => scheduledToken.slotId),
+      },
+    },
+    select: {
+      slotId: true,
     },
   });
+  const existingSlotIds = new Set(
+    existingRechecks.flatMap((recheck) =>
+      recheck.slotId ? [recheck.slotId] : [],
+    ),
+  );
+  const missingScheduledTokens = scheduledTokens.filter(
+    (scheduledToken) => !existingSlotIds.has(scheduledToken.slotId),
+  );
 
-  if (existingRechecks > 0) {
+  if (missingScheduledTokens.length === 0) {
     return [];
   }
 
-  const scheduledTokens = buildScheduledRecheckTokens(input);
+  await tx.eventRecheck.createMany({
+    data: missingScheduledTokens.map((scheduledToken) => ({
+      assignmentId: input.assignmentId,
+      slotId: scheduledToken.slotId,
+      employeeId: input.employeeId,
+      startsAt: scheduledToken.startsAt,
+      expiresAt: scheduledToken.expiresAt,
+      status: scheduledToken.status,
+    })),
+    skipDuplicates: true,
+  });
 
-  if (scheduledTokens.length > 0) {
-    await tx.eventRecheck.createMany({
-      data: scheduledTokens.map((scheduledToken) => ({
-        assignmentId: input.assignmentId,
-        employeeId: input.employeeId,
-        startsAt: scheduledToken.startsAt,
-        expiresAt: scheduledToken.expiresAt,
-        status: RecheckStatus.SCHEDULED,
-      })),
-    });
-  }
-
-  return scheduledTokens;
+  return missingScheduledTokens;
 }
 
 export async function getRecheckTokenInfo({

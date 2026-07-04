@@ -23,8 +23,12 @@ const validCreateEventBody = {
   startsAt: "2026-07-10T09:00:00.000Z",
   endsAt: "2026-07-10T12:00:00.000Z",
   employeeIds: ["employee_1"],
-  recheckCount: 1,
-  recheckWindowMin: 15,
+  recheckSlots: [
+    {
+      startsAt: "2026-07-10T10:00:00.000Z",
+      expiresAt: "2026-07-10T10:10:00.000Z",
+    },
+  ],
   requirePhoto: true,
   requireCheckout: true,
 };
@@ -82,8 +86,11 @@ test("admin can create event through the route handler", async () => {
             status: EventStatus.SCHEDULED,
             requirePhoto: input.requirePhoto,
             requireCheckout: input.requireCheckout,
-            recheckCount: input.recheckCount,
-            recheckWindowMin: input.recheckWindowMin ?? null,
+            recheckSlots: input.recheckSlots.map((slot, index) => ({
+              id: `slot_${index + 1}`,
+              startsAt: slot.startsAt.toISOString(),
+              expiresAt: slot.expiresAt.toISOString(),
+            })),
             createdByUserId: userId,
             createdAt: "2026-07-10T08:00:00.000Z",
           },
@@ -103,9 +110,86 @@ test("admin can create event through the route handler", async () => {
 
   assert.equal(body.ok, true);
   assert.equal(body.data.event.id, "event_1");
+  assert.equal(body.data.event.recheckSlots[0].startsAt, "2026-07-10T10:00:00.000Z");
   assert.equal(body.data.assignedEmployeesCount, 1);
   assert.equal(createdByUserId, "admin_1");
   assert.equal(sawParsedDate, true);
+});
+
+test("admin create event rejects a recheck slot outside the event window", async () => {
+  const response = await handleAdminCreateEventRequest(
+    jsonRequest({
+      ...validCreateEventBody,
+      recheckSlots: [
+        {
+          startsAt: "2026-07-10T12:30:00.000Z",
+          expiresAt: "2026-07-10T12:40:00.000Z",
+        },
+      ],
+    }),
+    {
+      requireAdminSession: async () =>
+        ({
+          user: {
+            id: "admin_1",
+            role: UserRole.ADMIN,
+          },
+        }) as never,
+      consumeRateLimit: async () => ({
+        allowed: true,
+        limit: 20,
+        remaining: 19,
+        resetAt: new Date("2026-07-10T13:00:00.000Z"),
+        retryAfterMs: 0,
+      }),
+      createEvent: async () => {
+        throw new Error("invalid event should not be created");
+      },
+    },
+  );
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error.message, /inside the event time window/);
+});
+
+test("admin create event rejects duplicate recheck slot startsAt values", async () => {
+  const response = await handleAdminCreateEventRequest(
+    jsonRequest({
+      ...validCreateEventBody,
+      recheckSlots: [
+        {
+          startsAt: "2026-07-10T10:00:00.000Z",
+          expiresAt: "2026-07-10T10:10:00.000Z",
+        },
+        {
+          startsAt: "2026-07-10T10:00:00.000Z",
+          expiresAt: "2026-07-10T10:20:00.000Z",
+        },
+      ],
+    }),
+    {
+      requireAdminSession: async () =>
+        ({
+          user: {
+            id: "admin_1",
+            role: UserRole.ADMIN,
+          },
+        }) as never,
+      consumeRateLimit: async () => ({
+        allowed: true,
+        limit: 20,
+        remaining: 19,
+        resetAt: new Date("2026-07-10T13:00:00.000Z"),
+        retryAfterMs: 0,
+      }),
+      createEvent: async () => {
+        throw new Error("invalid event should not be created");
+      },
+    },
+  );
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error.message, /duplicate startsAt/);
 });
 
 test("non-admin cannot create event", async () => {

@@ -6,14 +6,12 @@ import { AssignmentStatus, RecheckStatus } from "@prisma/client";
 import { handleCronRechecksRequest } from "../../app/api/cron/rechecks/route.ts";
 import {
   isCronRequestAuthorized,
-  normalizeAppUrl,
   processScheduledRechecksInTransaction,
 } from "../../services/recheck-cron.service.ts";
 
 function createCronTx({
   activationCandidates = [],
   expiredCandidates = [],
-  employeeEmails = new Map<string, string>(),
 }: {
   activationCandidates?: Array<{
     id: string;
@@ -26,8 +24,8 @@ function createCronTx({
     id: string;
     assignmentId: string;
   }>;
-  employeeEmails?: Map<string, string>;
 } = {}) {
+  const recheckFindManyCalls: unknown[] = [];
   const recheckUpdateManyCalls: unknown[] = [];
   const notificationCreateCalls: unknown[] = [];
   const assignmentUpdateManyCalls: unknown[] = [];
@@ -35,7 +33,8 @@ function createCronTx({
 
   const tx = {
     eventRecheck: {
-      findMany: async () => {
+      findMany: async (args: unknown) => {
+        recheckFindManyCalls.push(args);
         eventRecheckFindManyCalls += 1;
 
         if (eventRecheckFindManyCalls === 1) {
@@ -62,13 +61,6 @@ function createCronTx({
         };
       },
     },
-    user: {
-      findMany: async () =>
-        [...employeeEmails.entries()].map(([id, email]) => ({
-          id,
-          email,
-        })),
-    },
     notification: {
       create: async (args: unknown) => {
         notificationCreateCalls.push(args);
@@ -91,13 +83,14 @@ function createCronTx({
 
   return {
     tx,
+    recheckFindManyCalls,
     recheckUpdateManyCalls,
     notificationCreateCalls,
     assignmentUpdateManyCalls,
   };
 }
 
-test("in-app notification is created when a recheck becomes pending", async () => {
+test("in-app notification is created when a fixed recheck becomes pending", async () => {
   const now = new Date("2026-07-10T12:00:00.000Z");
   const expiresAt = new Date("2026-07-10T12:15:00.000Z");
   const { tx, notificationCreateCalls } = createCronTx({
@@ -110,20 +103,17 @@ test("in-app notification is created when a recheck becomes pending", async () =
         locationName: "Amman Office",
       },
     ],
-    employeeEmails: new Map([["employee_1", "employee@example.com"]]),
   });
 
   const result = await processScheduledRechecksInTransaction(tx as never, {
     now,
-    appUrl: "https://app.example.com",
   });
 
   assert.equal(result.activatedCount, 1);
   assert.equal(result.notifications.inAppCreatedCount, 1);
   assert.equal(notificationCreateCalls.length, 1);
-  assert.deepEqual(
-    (notificationCreateCalls[0] as { data: { userId: string; link: string | null } })
-      .data.userId,
+  assert.equal(
+    (notificationCreateCalls[0] as { data: { userId: string } }).data.userId,
     "employee_1",
   );
   assert.equal(
@@ -132,41 +122,9 @@ test("in-app notification is created when a recheck becomes pending", async () =
   );
 });
 
-test("email is sent when Resend env vars exist", async () => {
+test("cron activates scheduled or pending fixed rechecks without email env vars", async () => {
   const now = new Date("2026-07-10T12:00:00.000Z");
-  const sentEmails: Array<{ text: string; html: string }> = [];
-  const { tx } = createCronTx({
-    activationCandidates: [
-      {
-        id: "recheck_1",
-        employeeId: "employee_1",
-        expiresAt: new Date("2026-07-10T12:15:00.000Z"),
-        eventName: "Site Visit",
-        locationName: "Amman Office",
-      },
-    ],
-    employeeEmails: new Map([["employee_1", "employee@example.com"]]),
-  });
-
-  const result = await processScheduledRechecksInTransaction(tx as never, {
-    now,
-    appUrl: "https://app.example.com",
-    resendApiKey: "resend_key",
-    resendFromEmail: "Attendance <attendance@example.com>",
-    sendEmail: async (email) => {
-      sentEmails.push(email);
-    },
-  });
-
-  assert.equal(result.notifications.emailSentCount, 1);
-  assert.equal(result.notifications.emailSkippedCount, 0);
-  assert.equal(sentEmails.length, 1);
-  assert.match(sentEmails[0].text, /https:\/\/app\.example\.com\/recheck\/.+/);
-});
-
-test("missing Resend env vars do not crash cron", async () => {
-  const now = new Date("2026-07-10T12:00:00.000Z");
-  const { tx, notificationCreateCalls } = createCronTx({
+  const { tx, recheckFindManyCalls, recheckUpdateManyCalls } = createCronTx({
     activationCandidates: [
       {
         id: "recheck_1",
@@ -176,93 +134,48 @@ test("missing Resend env vars do not crash cron", async () => {
         locationName: null,
       },
     ],
-    employeeEmails: new Map([["employee_1", "employee@example.com"]]),
   });
 
   const result = await processScheduledRechecksInTransaction(tx as never, {
     now,
-    appUrl: "https://app.example.com",
   });
-
-  assert.equal(result.activatedCount, 1);
-  assert.equal(result.notifications.inAppCreatedCount, 1);
-  assert.equal(result.notifications.emailSkippedCount, 1);
-  assert.equal(notificationCreateCalls.length, 1);
-  assert.equal(result.notifications.warnings[0].code, "EMAIL_NOT_CONFIGURED");
-});
-
-test("email is skipped safely when RESEND_FROM_EMAIL is empty", async () => {
-  const now = new Date("2026-07-10T12:00:00.000Z");
-  const sentEmails: unknown[] = [];
-  const { tx, notificationCreateCalls } = createCronTx({
-    activationCandidates: [
-      {
-        id: "recheck_1",
-        employeeId: "employee_1",
-        expiresAt: new Date("2026-07-10T12:15:00.000Z"),
-        eventName: "Site Visit",
-        locationName: null,
-      },
-    ],
-    employeeEmails: new Map([["employee_1", "employee@example.com"]]),
-  });
-
-  const result = await processScheduledRechecksInTransaction(tx as never, {
-    now,
-    appUrl: "https://my-app.vercel.app",
-    resendApiKey: "resend_key",
-    resendFromEmail: "",
-    sendEmail: async (email) => {
-      sentEmails.push(email);
-    },
-  });
-
-  assert.equal(result.activatedCount, 1);
-  assert.equal(result.notifications.inAppCreatedCount, 1);
-  assert.equal(result.notifications.emailSkippedCount, 1);
-  assert.equal(notificationCreateCalls.length, 1);
-  assert.equal(sentEmails.length, 0);
-  assert.equal(result.notifications.warnings[0].code, "EMAIL_NOT_CONFIGURED");
-});
-
-test("email failure does not prevent pending state or notificationSentAt update", async () => {
-  const now = new Date("2026-07-10T12:00:00.000Z");
-  const { tx, recheckUpdateManyCalls, notificationCreateCalls } = createCronTx({
-    activationCandidates: [
-      {
-        id: "recheck_1",
-        employeeId: "employee_1",
-        expiresAt: new Date("2026-07-10T12:15:00.000Z"),
-        eventName: "Site Visit",
-        locationName: null,
-      },
-    ],
-    employeeEmails: new Map([["employee_1", "employee@example.com"]]),
-  });
-
-  const result = await processScheduledRechecksInTransaction(tx as never, {
-    now,
-    appUrl: "https://app.example.com",
-    resendApiKey: "resend_key",
-    resendFromEmail: "Attendance <attendance@example.com>",
-    sendEmail: async () => {
-      throw new Error("Resend outage");
-    },
-  });
-
+  const activationQuery = recheckFindManyCalls[0] as {
+    where: {
+      status: { in: RecheckStatus[] };
+      tokenHash: null;
+      notificationSentAt: null;
+    };
+  };
   const activationUpdate = recheckUpdateManyCalls[0] as {
+    where: {
+      status: { in: RecheckStatus[] };
+      tokenHash: null;
+      notificationSentAt: null;
+    };
     data: {
       status: RecheckStatus;
+      tokenHash: string;
       notificationSentAt: Date;
+      rawToken?: string;
     };
   };
 
+  assert.equal(result.activatedCount, 1);
+  assert.deepEqual(activationQuery.where.status.in, [
+    RecheckStatus.SCHEDULED,
+    RecheckStatus.PENDING,
+  ]);
+  assert.equal(activationQuery.where.tokenHash, null);
+  assert.equal(activationQuery.where.notificationSentAt, null);
+  assert.deepEqual(activationUpdate.where.status.in, [
+    RecheckStatus.SCHEDULED,
+    RecheckStatus.PENDING,
+  ]);
+  assert.equal(activationUpdate.where.tokenHash, null);
   assert.equal(activationUpdate.data.status, RecheckStatus.PENDING);
+  assert.match(activationUpdate.data.tokenHash, /^[a-f0-9]{64}$/);
   assert.equal(activationUpdate.data.notificationSentAt, now);
-  assert.equal(notificationCreateCalls.length, 1);
-  assert.equal(result.notifications.inAppCreatedCount, 1);
-  assert.equal(result.notifications.emailSkippedCount, 1);
-  assert.equal(result.notifications.warnings[0].code, "EMAIL_SEND_FAILED");
+  assert.equal(activationUpdate.data.rawToken, undefined);
 });
 
 test("notification is not sent twice when activation update does not win", async () => {
@@ -277,7 +190,6 @@ test("notification is not sent twice when activation update does not win", async
         locationName: null,
       },
     ],
-    employeeEmails: new Map([["employee_1", "employee@example.com"]]),
   });
   tx.eventRecheck.updateMany = async () => ({
     count: 0,
@@ -291,56 +203,7 @@ test("notification is not sent twice when activation update does not win", async
   assert.equal(notificationCreateCalls.length, 0);
 });
 
-test("notificationSentAt and tokenHash are set while raw token is not stored", async () => {
-  const now = new Date("2026-07-10T12:00:00.000Z");
-  const { tx, recheckUpdateManyCalls, notificationCreateCalls } = createCronTx({
-    activationCandidates: [
-      {
-        id: "recheck_1",
-        employeeId: "employee_1",
-        expiresAt: new Date("2026-07-10T12:15:00.000Z"),
-        eventName: "Site Visit",
-        locationName: null,
-      },
-    ],
-    employeeEmails: new Map([["employee_1", "employee@example.com"]]),
-  });
-
-  await processScheduledRechecksInTransaction(tx as never, { now });
-
-  const activationUpdate = recheckUpdateManyCalls[0] as {
-    data: {
-      status: RecheckStatus;
-      tokenHash: string;
-      notificationSentAt: Date;
-      rawToken?: string;
-    };
-  };
-
-  assert.equal(activationUpdate.data.status, RecheckStatus.PENDING);
-  assert.match(activationUpdate.data.tokenHash, /^[a-f0-9]{64}$/);
-  assert.equal(activationUpdate.data.notificationSentAt, now);
-  assert.equal(activationUpdate.data.rawToken, undefined);
-  assert.equal(
-    (notificationCreateCalls[0] as { data: { link: string | null } }).data.link,
-    null,
-  );
-  assert.equal(
-    JSON.stringify(notificationCreateCalls).includes("recheck/"),
-    false,
-  );
-});
-
-test("app URL normalization only allows http and https origins", () => {
-  assert.equal(
-    normalizeAppUrl("https://user:pass@app.example.com/base/?secret=1#frag"),
-    "https://app.example.com/base",
-  );
-  assert.equal(normalizeAppUrl("javascript:alert(1)"), "http://localhost:3000");
-  assert.equal(normalizeAppUrl("not a url"), "http://localhost:3000");
-});
-
-test("expired scheduled and pending rechecks become missed", async () => {
+test("expired scheduled and pending fixed rechecks become missed", async () => {
   const now = new Date("2026-07-10T12:00:00.000Z");
   const { tx, recheckUpdateManyCalls } = createCronTx({
     expiredCandidates: [
@@ -490,9 +353,6 @@ test("cron route rejects an invalid secret", async () => {
           missedCount: 0,
           notifications: {
             inAppCreatedCount: 0,
-            emailSentCount: 0,
-            emailSkippedCount: 0,
-            warnings: [],
           },
         };
       },
@@ -524,9 +384,6 @@ test("cron route returns the processing summary", async () => {
         missedCount: 1,
         notifications: {
           inAppCreatedCount: 3,
-          emailSentCount: 2,
-          emailSkippedCount: 1,
-          warnings: [],
         },
       }),
     },
@@ -540,9 +397,6 @@ test("cron route returns the processing summary", async () => {
       missedCount: 1,
       notifications: {
         inAppCreatedCount: 3,
-        emailSentCount: 2,
-        emailSkippedCount: 1,
-        warnings: [],
       },
     },
   });

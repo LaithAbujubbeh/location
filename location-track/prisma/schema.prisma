@@ -134,30 +134,44 @@ model Verification {
 }
 
 model Event {
-  id                     String            @id @default(cuid())
-  title                  String
-  description            String?
-  locationName           String?
-  latitude               Decimal           @db.Decimal(10, 7)
-  longitude              Decimal           @db.Decimal(10, 7)
-  radiusMeters           Int
-  startsAt               DateTime
-  endsAt                 DateTime
-  status                 EventStatus       @default(SCHEDULED)
-  photoRequired          Boolean           @default(false)
-  checkoutRequired       Boolean           @default(true)
-  rechecksEnabled        Boolean           @default(false)
-  recheckCount           Int               @default(0)
-  recheckWindowMinutes   Int?
-  recheckDurationMinutes Int?
-  createdByUserId        String
-  createdAt              DateTime          @default(now())
-  updatedAt              DateTime          @updatedAt
-  assignments            EventAssignment[]
+  id               String             @id @default(cuid())
+  title            String
+  description      String?
+  locationName     String?
+  latitude         Decimal            @db.Decimal(10, 7)
+  longitude        Decimal            @db.Decimal(10, 7)
+  radiusMeters     Int
+  startsAt         DateTime
+  endsAt           DateTime
+  status           EventStatus        @default(SCHEDULED)
+  photoRequired    Boolean            @default(false)
+  checkoutRequired Boolean            @default(true)
+  rechecksEnabled  Boolean            @default(false)
+  createdByUserId  String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  assignments      EventAssignment[]
+  recheckSlots     EventRecheckSlot[]
 
   @@index([status, startsAt])
   @@index([createdByUserId, startsAt])
   @@index([startsAt, endsAt])
+}
+
+model EventRecheckSlot {
+  id        String         @id @default(cuid())
+  eventId   String
+  startsAt  DateTime
+  expiresAt DateTime
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rechecks  EventRecheck[]
+
+  @@unique([eventId, startsAt])
+  @@index([eventId])
+  @@index([startsAt])
+  @@index([expiresAt])
 }
 
 model EventAssignment {
@@ -209,24 +223,28 @@ model EventProof {
 }
 
 model EventRecheck {
-  id                 String          @id @default(cuid())
+  id                 String            @id @default(cuid())
   assignmentId       String
+  slotId             String?
   employeeId         String
-  tokenHash          String?         @unique
-  status             RecheckStatus   @default(SCHEDULED)
+  tokenHash          String?           @unique
+  status             RecheckStatus     @default(SCHEDULED)
   startsAt           DateTime
   expiresAt          DateTime
   sentAt             DateTime?
   notificationSentAt DateTime?
   submittedAt        DateTime?
   completedAt        DateTime?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  assignment         EventAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  assignment         EventAssignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  slot               EventRecheckSlot? @relation(fields: [slotId], references: [id], onDelete: Cascade)
   proofs             EventProof[]
 
+  @@unique([assignmentId, slotId])
   @@index([assignmentId, status])
   @@index([assignmentId, startsAt])
+  @@index([slotId])
   @@index([employeeId, status])
   @@index([status, startsAt])
   @@index([status, expiresAt])

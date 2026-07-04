@@ -237,8 +237,16 @@ export async function checkInToEventInTransaction(
           endsAt: true,
           photoRequired: true,
           rechecksEnabled: true,
-          recheckCount: true,
-          recheckWindowMinutes: true,
+          recheckSlots: {
+            orderBy: {
+              startsAt: "asc",
+            },
+            select: {
+              id: true,
+              startsAt: true,
+              expiresAt: true,
+            },
+          },
         },
       },
     },
@@ -398,11 +406,8 @@ export async function checkInToEventInTransaction(
       await scheduleRechecksForAssignment(tx, {
         assignmentId: assignment.id,
         employeeId,
-        eventStartsAt: assignment.event.startsAt,
-        eventEndsAt: assignment.event.endsAt,
         checkInAt: now,
-        recheckCount: assignment.event.recheckCount,
-        recheckWindowMinutes: assignment.event.recheckWindowMinutes,
+        recheckSlots: assignment.event.recheckSlots,
       });
     }
 

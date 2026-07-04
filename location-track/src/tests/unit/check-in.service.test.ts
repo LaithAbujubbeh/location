@@ -63,8 +63,13 @@ function createCheckInTx({
       endsAt: new Date("2026-07-10T12:00:00.000Z"),
       photoRequired: true,
       rechecksEnabled: true,
-      recheckCount: 1,
-      recheckWindowMinutes: 15,
+      recheckSlots: [
+        {
+          id: "slot_1",
+          startsAt: new Date("2026-07-10T11:00:00.000Z"),
+          expiresAt: new Date("2026-07-10T11:15:00.000Z"),
+        },
+      ],
     },
   };
   let proofCreateData: {
@@ -80,6 +85,7 @@ function createCheckInTx({
   let recheckCreateData: {
     assignmentId: string;
     employeeId: string;
+    slotId: string;
     startsAt: Date;
     expiresAt: Date;
     status: RecheckStatus;
@@ -153,13 +159,14 @@ function createCheckInTx({
       },
     },
     eventRecheck: {
-      count: async () => 0,
+      findMany: async () => [],
       createMany: async ({
         data,
       }: {
         data: Array<{
           assignmentId: string;
           employeeId: string;
+          slotId: string;
           startsAt: Date;
           expiresAt: Date;
           status: RecheckStatus;
@@ -205,6 +212,7 @@ test("employee check-in succeeds inside radius and schedules rechecks", async ()
   assert.equal(getProofCreateData()?.rejectionCode, null);
   assert.equal(getRecheckCreateData()?.assignmentId, "assignment_1");
   assert.equal(getRecheckCreateData()?.employeeId, "employee_1");
+  assert.equal(getRecheckCreateData()?.slotId, "slot_1");
   assert.equal(getRecheckCreateData()?.status, RecheckStatus.SCHEDULED);
 });
 

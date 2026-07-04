@@ -12,6 +12,7 @@ import { prisma } from "../lib/prisma.ts";
 import type {
   AdminEventTimelineQueryInput,
   CreateEventInput,
+  EmployeeEventDetailQueryInput,
   EmployeeEventListQueryInput,
 } from "../lib/validators.ts";
 
@@ -40,8 +41,7 @@ export type CreateEventResult = {
     status: EventStatus;
     requirePhoto: boolean;
     requireCheckout: boolean;
-    recheckCount: number;
-    recheckWindowMin: number | null;
+    recheckSlots: EventRecheckSlotSummary[];
     createdByUserId: string;
     createdAt: string;
   };
@@ -51,6 +51,18 @@ export type CreateEventResult = {
 type CreateEventForAdminArgs = {
   input: CreateEventInput;
   createdByUserId: string;
+};
+
+export type EventRecheckSlotSummary = {
+  id: string;
+  startsAt: string;
+  expiresAt: string;
+};
+
+export type EmployeeEventRecheckSlotSummary = EventRecheckSlotSummary & {
+  status: RecheckStatus | null;
+  submittedAt: string | null;
+  completedAt: string | null;
 };
 
 export type EmployeeEventListItem = {
@@ -73,6 +85,7 @@ export type EmployeeEventListItem = {
     status: EventStatus;
     requirePhoto: boolean;
     requireCheckout: boolean;
+    recheckSlots: EmployeeEventRecheckSlotSummary[];
   };
 };
 
@@ -94,6 +107,15 @@ type ListAssignedEventsForEmployeeArgs = {
   now?: Date;
 };
 
+export type EmployeeEventDetailResult = EmployeeEventListItem;
+
+type GetAssignedEventForEmployeeArgs = {
+  employeeId: string;
+  eventId: string;
+  query: EmployeeEventDetailQueryInput;
+  now?: Date;
+};
+
 export type AdminEventSummary = {
   id: string;
   name: string;
@@ -103,6 +125,7 @@ export type AdminEventSummary = {
   radiusMeters: number;
   requirePhoto: boolean;
   requireCheckout: boolean;
+  recheckSlots: EventRecheckSlotSummary[];
 };
 
 export type AdminAssignmentSummary = {
@@ -153,6 +176,7 @@ export type AdminEventTimelineAssignment = AdminAssignmentSummary & {
 
 export type AdminEventTimelineResult = {
   event: AdminEventSummary;
+  recheckSlots: EventRecheckSlotSummary[];
   assignments: AdminEventTimelineAssignment[];
   timeline: AdminProofTimelineRecord[];
   rechecks: AdminRecheckTimelineRecord[];
@@ -177,6 +201,12 @@ type GetAdminEventTimelineArgs = {
   query: AdminEventTimelineQueryInput;
 };
 
+const eventRecheckSlotSelect = {
+  id: true,
+  startsAt: true,
+  expiresAt: true,
+} satisfies Prisma.EventRecheckSlotSelect;
+
 const adminEventSummarySelect = {
   id: true,
   title: true,
@@ -186,6 +216,16 @@ const adminEventSummarySelect = {
   radiusMeters: true,
   photoRequired: true,
   checkoutRequired: true,
+  recheckSlots: {
+    orderBy: {
+      startsAt: "asc",
+    },
+    select: {
+      id: true,
+      startsAt: true,
+      expiresAt: true,
+    },
+  },
 } satisfies Prisma.EventSelect;
 
 const adminAssignmentSelect = {
@@ -251,6 +291,10 @@ type SelectedAdminRecheck = Prisma.EventRecheckGetPayload<{
   select: typeof adminRecheckSelect;
 }>;
 
+type SelectedEventRecheckSlot = Prisma.EventRecheckSlotGetPayload<{
+  select: typeof eventRecheckSlotSelect;
+}>;
+
 type SelectedAdminEmployee = {
   id: string;
   name: string;
@@ -278,6 +322,16 @@ function toPagination({
   };
 }
 
+function toEventRecheckSlotSummary(
+  slot: SelectedEventRecheckSlot,
+): EventRecheckSlotSummary {
+  return {
+    id: slot.id,
+    startsAt: slot.startsAt.toISOString(),
+    expiresAt: slot.expiresAt.toISOString(),
+  };
+}
+
 function toAdminEventSummary(event: SelectedAdminEventSummary): AdminEventSummary {
   return {
     id: event.id,
@@ -288,6 +342,7 @@ function toAdminEventSummary(event: SelectedAdminEventSummary): AdminEventSummar
     radiusMeters: event.radiusMeters,
     requirePhoto: event.photoRequired,
     requireCheckout: event.checkoutRequired,
+    recheckSlots: event.recheckSlots.map(toEventRecheckSlotSummary),
   };
 }
 
@@ -428,6 +483,7 @@ export async function buildAdminEventTimelineResult({
 
   return {
     event: toAdminEventSummary(event),
+    recheckSlots: event.recheckSlots.map(toEventRecheckSlotSummary),
     assignments: assignments.map((assignment) => ({
       ...toAssignmentSummary(assignment, employeeById),
       proofs: proofsByAssignmentId.get(assignment.id) ?? [],
@@ -465,8 +521,9 @@ export async function createEventForAdmin({
       );
     }
 
-    const recheckWindowMinutes =
-      input.recheckCount > 0 ? input.recheckWindowMin ?? null : null;
+    const recheckSlots = [...input.recheckSlots].sort(
+      (left, right) => left.startsAt.getTime() - right.startsAt.getTime(),
+    );
 
     const event = await tx.event.create({
       data: {
@@ -479,9 +536,13 @@ export async function createEventForAdmin({
         endsAt: input.endsAt,
         photoRequired: input.requirePhoto,
         checkoutRequired: input.requireCheckout,
-        rechecksEnabled: input.recheckCount > 0,
-        recheckCount: input.recheckCount,
-        recheckWindowMinutes,
+        rechecksEnabled: recheckSlots.length > 0,
+        recheckSlots: {
+          create: recheckSlots.map((slot) => ({
+            startsAt: slot.startsAt,
+            expiresAt: slot.expiresAt,
+          })),
+        },
         createdByUserId,
       },
       select: {
@@ -496,8 +557,12 @@ export async function createEventForAdmin({
         status: true,
         photoRequired: true,
         checkoutRequired: true,
-        recheckCount: true,
-        recheckWindowMinutes: true,
+        recheckSlots: {
+          orderBy: {
+            startsAt: "asc",
+          },
+          select: eventRecheckSlotSelect,
+        },
         createdByUserId: true,
         createdAt: true,
       },
@@ -523,8 +588,7 @@ export async function createEventForAdmin({
         status: event.status,
         requirePhoto: event.photoRequired,
         requireCheckout: event.checkoutRequired,
-        recheckCount: event.recheckCount,
-        recheckWindowMin: event.recheckWindowMinutes,
+        recheckSlots: event.recheckSlots.map(toEventRecheckSlotSummary),
         createdByUserId: event.createdByUserId,
         createdAt: event.createdAt.toISOString(),
       },
@@ -591,6 +655,14 @@ export async function listAssignedEventsForEmployeeInTransaction(
         checkedInAt: true,
         checkedOutAt: true,
         completedAt: true,
+        rechecks: {
+          select: {
+            slotId: true,
+            status: true,
+            submittedAt: true,
+            completedAt: true,
+          },
+        },
         event: {
           select: {
             id: true,
@@ -604,6 +676,12 @@ export async function listAssignedEventsForEmployeeInTransaction(
             status: true,
             photoRequired: true,
             checkoutRequired: true,
+            recheckSlots: {
+              orderBy: {
+                startsAt: "asc",
+              },
+              select: eventRecheckSlotSelect,
+            },
           },
         },
       },
@@ -633,6 +711,18 @@ export async function listAssignedEventsForEmployeeInTransaction(
         status: assignment.event.status,
         requirePhoto: assignment.event.photoRequired,
         requireCheckout: assignment.event.checkoutRequired,
+        recheckSlots: assignment.event.recheckSlots.map((slot) => {
+          const recheck = assignment.rechecks.find(
+            (record) => record.slotId === slot.id,
+          );
+
+          return {
+            ...toEventRecheckSlotSummary(slot),
+            status: recheck?.status ?? null,
+            submittedAt: recheck?.submittedAt?.toISOString() ?? null,
+            completedAt: recheck?.completedAt?.toISOString() ?? null,
+          };
+        }),
       },
     })),
     pagination: {
@@ -642,6 +732,124 @@ export async function listAssignedEventsForEmployeeInTransaction(
       totalPages,
       hasNextPage: query.page < totalPages,
       hasPreviousPage: query.page > 1,
+    },
+  };
+}
+
+export async function getAssignedEventForEmployee({
+  employeeId,
+  eventId,
+  query,
+  now = new Date(),
+}: GetAssignedEventForEmployeeArgs): Promise<EmployeeEventDetailResult> {
+  return prisma.$transaction((tx) =>
+    getAssignedEventForEmployeeInTransaction(tx, {
+      employeeId,
+      eventId,
+      query,
+      now,
+    }),
+  );
+}
+
+export async function getAssignedEventForEmployeeInTransaction(
+  tx: Prisma.TransactionClient,
+  {
+    employeeId,
+    eventId,
+    query,
+    now = new Date(),
+  }: GetAssignedEventForEmployeeArgs,
+): Promise<EmployeeEventDetailResult> {
+  const assignment = await tx.eventAssignment.findFirst({
+    where: {
+      employeeId,
+      eventId,
+      event: {
+        status: {
+          in: [EventStatus.SCHEDULED, EventStatus.ACTIVE],
+        },
+        ...(query.includeEnded ? {} : { endsAt: { gte: now } }),
+      },
+    },
+    select: {
+      id: true,
+      status: true,
+      checkedInAt: true,
+      checkedOutAt: true,
+      completedAt: true,
+      rechecks: {
+        select: {
+          slotId: true,
+          status: true,
+          submittedAt: true,
+          completedAt: true,
+        },
+      },
+      event: {
+        select: {
+          id: true,
+          title: true,
+          locationName: true,
+          latitude: true,
+          longitude: true,
+          radiusMeters: true,
+          startsAt: true,
+          endsAt: true,
+          status: true,
+          photoRequired: true,
+          checkoutRequired: true,
+          recheckSlots: {
+            orderBy: {
+              startsAt: "asc",
+            },
+            select: eventRecheckSlotSelect,
+          },
+        },
+      },
+    },
+  });
+
+  if (!assignment) {
+    throw new EventServiceError(
+      404,
+      "ASSIGNED_EVENT_NOT_FOUND",
+      "Assigned event was not found.",
+    );
+  }
+
+  return {
+    assignment: {
+      id: assignment.id,
+      status: assignment.status,
+      checkedInAt: assignment.checkedInAt?.toISOString() ?? null,
+      checkedOutAt: assignment.checkedOutAt?.toISOString() ?? null,
+      completedAt: assignment.completedAt?.toISOString() ?? null,
+    },
+    event: {
+      id: assignment.event.id,
+      name: assignment.event.title,
+      locationName: assignment.event.locationName,
+      latitude: assignment.event.latitude.toNumber(),
+      longitude: assignment.event.longitude.toNumber(),
+      radiusMeters: assignment.event.radiusMeters,
+      startsAt: assignment.event.startsAt.toISOString(),
+      endsAt: assignment.event.endsAt.toISOString(),
+      status: assignment.event.status,
+      requirePhoto: assignment.event.photoRequired,
+      requireCheckout: assignment.event.checkoutRequired,
+      recheckSlots: assignment.event.recheckSlots.map((slot) => {
+        const recheck = assignment.rechecks.find(
+          (record) => record.slotId === slot.id,
+        );
+
+        return {
+          ...toEventRecheckSlotSummary(slot),
+          status: recheck?.status ?? null,
+          submittedAt: recheck?.submittedAt?.toISOString() ?? null,
+          completedAt: recheck?.completedAt?.toISOString() ?? null,
+        };
+      }),
     },
   };
 }

@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/cn";
 import type { Locale } from "@/lib/i18n";
 
 const localeCookieName = "location-attendance-locale";
@@ -13,6 +14,7 @@ type LanguageToggleLabels = {
 };
 
 type LanguageToggleProps = {
+  className?: string;
   currentLocale: Locale;
   labels: LanguageToggleLabels;
 };
@@ -29,6 +31,7 @@ function getLocalizedPath(pathname: string, nextLocale: Locale) {
 }
 
 export function LanguageToggle({
+  className,
   currentLocale,
   labels,
 }: LanguageToggleProps) {
@@ -50,12 +53,15 @@ export function LanguageToggle({
   return (
     <div
       aria-label={labels.label}
-      className="inline-flex rounded-md border border-border bg-surface p-1 shadow-[var(--shadow-sm)]"
+      className={cn(
+        "inline-flex max-w-full rounded-md border border-border bg-surface p-1 shadow-[var(--shadow-sm)]",
+        className,
+      )}
       role="group"
     >
       <Button
         aria-pressed={currentLocale === "en"}
-        className="h-8 px-3 text-xs"
+        className="h-8 min-w-0 flex-1 px-2 text-xs sm:px-3"
         onClick={() => switchLocale("en")}
         type="button"
         variant={currentLocale === "en" ? "primary" : "ghost"}
@@ -64,7 +70,7 @@ export function LanguageToggle({
       </Button>
       <Button
         aria-pressed={currentLocale === "ar"}
-        className="h-8 px-3 text-xs"
+        className="h-8 min-w-0 flex-1 px-2 text-xs sm:px-3"
         onClick={() => switchLocale("ar")}
         type="button"
         variant={currentLocale === "ar" ? "primary" : "ghost"}

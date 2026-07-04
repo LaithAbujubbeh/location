@@ -20,8 +20,14 @@ type ThemeContextValue = {
 };
 
 const THEME_STORAGE_KEY = "location-attendance-theme";
+const THEME_COOKIE_NAME = "location-attendance-theme";
+const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+function isThemeMode(value: string | null | undefined): value is ThemeMode {
+  return value === "light" || value === "dark" || value === "system";
+}
 
 function getSystemTheme(): ResolvedTheme {
   if (
@@ -39,9 +45,23 @@ function applyTheme(mode: ThemeMode, resolvedTheme: ResolvedTheme) {
   document.documentElement.dataset.theme = resolvedTheme;
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("light");
+function persistThemeMode(mode: ThemeMode) {
+  window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+  document.cookie = `${THEME_COOKIE_NAME}=${mode}; Path=/; Max-Age=${THEME_COOKIE_MAX_AGE}; SameSite=Lax`;
+}
+
+export function ThemeProvider({
+  children,
+  initialMode = "system",
+}: {
+  children: React.ReactNode;
+  initialMode?: ThemeMode;
+}) {
+  const initialResolvedTheme =
+    initialMode === "system" ? "light" : initialMode;
+  const [mode, setModeState] = useState<ThemeMode>(initialMode);
+  const [resolvedTheme, setResolvedTheme] =
+    useState<ResolvedTheme>(initialResolvedTheme);
 
   const setMode = useCallback((nextMode: ThemeMode) => {
     const nextResolvedTheme =
@@ -49,7 +69,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     setModeState(nextMode);
     setResolvedTheme(nextResolvedTheme);
-    window.localStorage.setItem(THEME_STORAGE_KEY, nextMode);
+    persistThemeMode(nextMode);
     applyTheme(nextMode, nextResolvedTheme);
   }, []);
 
@@ -60,22 +80,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       const storedMode = window.localStorage.getItem(THEME_STORAGE_KEY);
-      const initialMode =
-        storedMode === "light" ||
-        storedMode === "dark" ||
-        storedMode === "system"
-          ? storedMode
-          : "system";
-      const initialResolvedTheme =
-        initialMode === "system" ? getSystemTheme() : initialMode;
+      const nextMode = isThemeMode(storedMode) ? storedMode : initialMode;
+      const nextResolvedTheme =
+        nextMode === "system" ? getSystemTheme() : nextMode;
 
-      setModeState(initialMode);
-      setResolvedTheme(initialResolvedTheme);
-      applyTheme(initialMode, initialResolvedTheme);
+      persistThemeMode(nextMode);
+      setModeState(nextMode);
+      setResolvedTheme(nextResolvedTheme);
+      applyTheme(nextMode, nextResolvedTheme);
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [initialMode]);
 
   useEffect(() => {
     if (mode !== "system") {

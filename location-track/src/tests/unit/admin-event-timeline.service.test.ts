@@ -37,6 +37,11 @@ type TimelineEventRecord = {
   status: EventStatus;
   photoRequired: boolean;
   checkoutRequired: boolean;
+  recheckSlots: Array<{
+    id: string;
+    startsAt: Date;
+    expiresAt: Date;
+  }>;
 };
 
 type AssignmentRecord = {
@@ -95,6 +100,13 @@ const event: TimelineEventRecord = {
   status: EventStatus.ACTIVE,
   photoRequired: true,
   checkoutRequired: true,
+  recheckSlots: [
+    {
+      id: "slot_1",
+      startsAt: new Date("2026-07-10T11:15:00.000Z"),
+      expiresAt: new Date("2026-07-10T11:45:00.000Z"),
+    },
+  ],
 };
 
 const assignmentOne: AssignmentRecord = {
@@ -300,7 +312,21 @@ test("admin can view event timeline through the route handler", async () => {
           radiusMeters: 90,
           requirePhoto: true,
           requireCheckout: true,
+          recheckSlots: [
+            {
+              id: "slot_1",
+              startsAt: "2026-07-10T11:15:00.000Z",
+              expiresAt: "2026-07-10T11:45:00.000Z",
+            },
+          ],
         },
+        recheckSlots: [
+          {
+            id: "slot_1",
+            startsAt: "2026-07-10T11:15:00.000Z",
+            expiresAt: "2026-07-10T11:45:00.000Z",
+          },
+        ],
         assignments: [],
         timeline: [],
         rechecks: [],
@@ -365,6 +391,8 @@ test("timeline returns check-in, recheck, and checkout proofs with recheck statu
 
   assert.equal(result.event.id, "event_1");
   assert.equal(result.event.name, "Warehouse Audit");
+  assert.equal(result.recheckSlots[0].id, "slot_1");
+  assert.equal(result.event.recheckSlots[0].startsAt, "2026-07-10T11:15:00.000Z");
   assert.equal(result.assignments[0].employee?.email, "maya@example.com");
   assert.deepEqual(
     result.timeline.map((proof) => proof.type),
@@ -465,6 +493,7 @@ test("employees route service returns assignment summaries only", async () => {
 
   assert.equal(result.assignments.length, 2);
   assert.equal(result.assignments[0].assignmentId, "assignment_1");
+  assert.equal(result.event.recheckSlots.length, 1);
   assert.equal("proofs" in result.assignments[0], false);
   assert.equal("rechecks" in result.assignments[0], false);
 });

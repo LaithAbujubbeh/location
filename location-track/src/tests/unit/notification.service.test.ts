@@ -27,7 +27,7 @@ function notificationRecord({
     message: "Please confirm your location.",
     type: NotificationType.RECHECK,
     channel: NotificationChannel.IN_APP,
-    link: "https://app.example.com/recheck/token",
+    link: null,
     readAt,
     createdAt: new Date("2026-07-10T12:00:00.000Z"),
   };
@@ -101,9 +101,8 @@ test("employee cannot mark another employee's notification as read", async () =>
   );
 });
 
-test(".vercel.app sender is skipped and in-app notification still succeeds", async () => {
+test("recheck notification creates only an in-app record", async () => {
   const notificationCreateCalls: unknown[] = [];
-  const sentEmails: unknown[] = [];
   const tx = {
     notification: {
       create: async (args: unknown) => {
@@ -119,65 +118,32 @@ test(".vercel.app sender is skipped and in-app notification still succeeds", asy
   const result = await sendRecheckNotification({
     tx: tx as never,
     userId: "employee_1",
-    userEmail: "employee@example.com",
-    eventName: "Site Visit",
-    locationName: null,
+    eventName: `Site Visit\r\nBcc: attacker@example.com`,
+    locationName: "Amman Office",
     expiresAt: new Date("2026-07-10T12:15:00.000Z"),
-    recheckLink: "https://my-app.vercel.app/recheck/raw-token",
     now: new Date("2026-07-10T12:00:00.000Z"),
-    resendApiKey: "resend_key",
-    resendFromEmail: "Attendance <notify@my-app.vercel.app>",
-    sendEmail: async (email) => {
-      sentEmails.push(email);
-    },
   });
+  const createCall = notificationCreateCalls[0] as {
+    data: {
+      title: string;
+      message: string;
+      channel: NotificationChannel;
+      link: string | null;
+    };
+  };
 
   assert.equal(result.inAppCreated, true);
   assert.equal(notificationCreateCalls.length, 1);
-  assert.equal(result.emailSkipped, true);
-  assert.equal(sentEmails.length, 0);
-  assert.equal(result.warnings[0].code, "EMAIL_SENDER_DOMAIN_NOT_ALLOWED");
+  assert.equal(createCall.data.channel, NotificationChannel.IN_APP);
+  assert.equal(createCall.data.link, null);
+  assert.doesNotMatch(createCall.data.title, /[\r\n]/);
+  assert.match(createCall.data.message, /Amman Office/);
 });
 
-test("recheck email HTML escapes event text and link attributes", async () => {
-  const sentEmails: Array<{ subject: string; text: string; html: string }> = [];
-  const tx = {
-    notification: {
-      create: async () => ({
-        id: "notification_1",
-      }),
-    },
-  };
-
-  const result = await sendRecheckNotification({
-    tx: tx as never,
-    userId: "employee_1",
-    userEmail: "employee@example.com",
-    eventName: `Site <script>alert("x")</script>\r\nBcc: attacker@example.com`,
-    locationName: `Office "A"`,
-    expiresAt: new Date("2026-07-10T12:15:00.000Z"),
-    recheckLink: `https://app.example.com/recheck/token" onclick="alert(1)`,
-    now: new Date("2026-07-10T12:00:00.000Z"),
-    resendApiKey: "resend_key",
-    resendFromEmail: "Attendance <attendance@example.com>",
-    sendEmail: async (email) => {
-      sentEmails.push(email);
-    },
-  });
-
-  assert.equal(result.emailSent, true);
-  assert.equal(sentEmails.length, 1);
-  assert.doesNotMatch(sentEmails[0].subject, /[\r\n]/);
-  assert.match(sentEmails[0].html, /&lt;script&gt;alert/);
-  assert.match(sentEmails[0].html, /&quot; onclick=&quot;alert\(1\)/);
-  assert.doesNotMatch(sentEmails[0].html, /<script>/);
-});
-
-test("env example does not hardcode a .vercel.app or fake sender email", () => {
+test("env example does not require Resend settings", () => {
   const envExample = readFileSync(".env.example", "utf8");
 
-  assert.match(envExample, /RESEND_FROM_EMAIL=""/);
-  assert.doesNotMatch(envExample, /notify@/);
-  assert.doesNotMatch(envExample, /noreply@/);
-  assert.doesNotMatch(envExample, /\.vercel\.app.*RESEND_FROM_EMAIL/);
+  assert.doesNotMatch(envExample, /RESEND_API_KEY/);
+  assert.doesNotMatch(envExample, /RESEND_FROM_EMAIL/);
+  assert.doesNotMatch(envExample, /TWILIO|WHATSAPP|FIREBASE/i);
 });

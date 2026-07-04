@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme/theme-provider";
+import { cn } from "@/lib/cn";
 
 type ThemeToggleLabels = {
   ariaLabel: string;
@@ -11,22 +12,26 @@ type ThemeToggleLabels = {
 };
 
 type ThemeToggleProps = {
+  className?: string;
   labels: ThemeToggleLabels;
 };
 
-export function ThemeToggle({ labels }: ThemeToggleProps) {
+export function ThemeToggle({ className, labels }: ThemeToggleProps) {
   const { mode, setMode } = useTheme();
 
   return (
     <div
       aria-label={labels.ariaLabel}
-      className="inline-flex rounded-md border border-border bg-surface p-1 shadow-[var(--shadow-sm)]"
+      className={cn(
+        "inline-flex max-w-full rounded-md border border-border bg-surface p-1 shadow-[var(--shadow-sm)]",
+        className,
+      )}
       role="group"
     >
       {(["light", "dark", "system"] as const).map((themeMode) => (
         <Button
           aria-pressed={mode === themeMode}
-          className="h-8 px-3 text-xs capitalize"
+          className="h-8 min-w-0 flex-1 px-2 text-xs capitalize sm:px-3"
           key={themeMode}
           onClick={() => setMode(themeMode)}
           type="button"

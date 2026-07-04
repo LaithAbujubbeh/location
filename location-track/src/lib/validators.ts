@@ -9,6 +9,11 @@ const dateString = z
   })
   .transform((value) => new Date(value));
 
+const recheckSlotSchema = z.object({
+  startsAt: dateString,
+  expiresAt: dateString,
+});
+
 export const createEventSchema = z
   .object({
     name: z.string().trim().min(1).max(160),
@@ -19,8 +24,7 @@ export const createEventSchema = z
     startsAt: dateString,
     endsAt: dateString,
     employeeIds: z.array(z.string().trim().min(1)).min(1),
-    recheckCount: z.number().int().min(0).max(20).default(0),
-    recheckWindowMin: z.number().int().min(1).max(1440).optional(),
+    recheckSlots: z.array(recheckSlotSchema).max(10).default([]),
     requirePhoto: z.boolean().default(false),
     requireCheckout: z.boolean().default(true),
   })
@@ -41,15 +45,57 @@ export const createEventSchema = z
       });
     }
 
-    if (value.recheckCount > 0 && !value.recheckWindowMin) {
-      context.addIssue({
-        code: "custom",
-        path: ["recheckWindowMin"],
-        message:
-          "recheckWindowMin is required when recheckCount is greater than 0.",
-      });
+    const startsAtTimes = new Set<number>();
+
+    for (const [index, slot] of value.recheckSlots.entries()) {
+      if (slot.startsAt < value.startsAt || slot.startsAt > value.endsAt) {
+        context.addIssue({
+          code: "custom",
+          path: ["recheckSlots", index, "startsAt"],
+          message: "startsAt must be inside the event time window.",
+        });
+      }
+
+      if (slot.expiresAt < value.startsAt || slot.expiresAt > value.endsAt) {
+        context.addIssue({
+          code: "custom",
+          path: ["recheckSlots", index, "expiresAt"],
+          message: "expiresAt must be inside the event time window.",
+        });
+      }
+
+      if (slot.startsAt >= slot.expiresAt) {
+        context.addIssue({
+          code: "custom",
+          path: ["recheckSlots", index, "expiresAt"],
+          message: "expiresAt must be after startsAt.",
+        });
+      }
+
+      const startsAtTime = slot.startsAt.getTime();
+
+      if (startsAtTimes.has(startsAtTime)) {
+        context.addIssue({
+          code: "custom",
+          path: ["recheckSlots", index, "startsAt"],
+          message: "recheckSlots must not contain duplicate startsAt values.",
+        });
+      }
+
+      startsAtTimes.add(startsAtTime);
     }
   });
+
+export const employeeEventDetailQuerySchema = z.object({
+  includeEnded: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => value === "true"),
+});
+
+export type EmployeeEventDetailQueryInput = z.infer<
+  typeof employeeEventDetailQuerySchema
+>;
 
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 

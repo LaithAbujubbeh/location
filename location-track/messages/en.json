@@ -3,6 +3,9 @@
     "title": "Location Attendance",
     "description": "Location-based attendance and verification app."
   },
+  "common": {
+    "appName": "Location Attendance"
+  },
   "language": {
     "label": "Language",
     "english": "English",
@@ -14,22 +17,53 @@
     "dark": "Dark",
     "system": "System"
   },
-  "home": {
-    "eyebrow": "i18n setup",
-    "title": "Location Attendance",
-    "description": "English and Arabic routing, message files, language switching, and LTR/RTL document direction are ready for the next implementation step.",
-    "componentsTitle": "Base components",
-    "componentsDescription": "Buttons, badges, inputs, cards, and loading placeholders now read from localized labels.",
-    "tokensTitle": "RTL-safe foundations",
-    "tokensDescription": "Layout uses document direction and logical spacing basics so Arabic can mirror cleanly.",
-    "inputLabel": "Sample input",
-    "inputPlaceholder": "Employee name",
-    "buttons": {
-      "primary": "Primary",
-      "secondary": "Secondary",
-      "outline": "Outline",
-      "ghost": "Ghost",
-      "danger": "Danger"
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "cardTitle": "Welcome back",
+      "cardDescription": "Use your work account to continue.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in",
+      "requiredError": "Email and password are required.",
+      "invalidError": "The email or password is incorrect."
+    },
+    "logout": "Log out",
+    "signedInAs": "Signed in as"
+  },
+  "admin": {
+    "shell": {
+      "areaLabel": "Admin dashboard",
+      "closeMenu": "Close admin menu",
+      "openMenu": "Open admin menu"
+    },
+    "nav": {
+      "events": "Events"
+    },
+    "events": {
+      "title": "Events",
+      "description": "Create, assign, and review attendance events from the admin workspace.",
+      "cardTitle": "Attendance events",
+      "cardDescription": "Manage location-based attendance events.",
+      "emptyTitle": "No events to display",
+      "emptyDescription": "Created events will appear here."
+    }
+  },
+  "employee": {
+    "shell": {
+      "areaLabel": "Employee app"
+    },
+    "nav": {
+      "events": "Events"
+    },
+    "events": {
+      "title": "My events",
+      "description": "Assigned active and upcoming events appear in this mobile workspace.",
+      "cardTitle": "Assigned events",
+      "cardDescription": "Track assigned attendance events.",
+      "emptyTitle": "No assigned events",
+      "emptyDescription": "Active and upcoming assignments will appear here."
     }
   },
   "status": {

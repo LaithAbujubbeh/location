@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
@@ -21,23 +22,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const themeScript = `
-(() => {
-  try {
-    const storageKey = "location-attendance-theme";
-    const stored = window.localStorage.getItem(storageKey);
-    const mode = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
-    const resolved = mode === "system"
-      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-      : mode;
-    document.documentElement.dataset.themeMode = mode;
-    document.documentElement.dataset.theme = resolved;
-  } catch {
-    document.documentElement.dataset.themeMode = "system";
-    document.documentElement.dataset.theme = "light";
-  }
-})();
-`;
+type ThemeMode = "light" | "dark" | "system";
+
+const themeCookieName = "location-attendance-theme";
+
+function isThemeMode(value: string | undefined): value is ThemeMode {
+  return value === "light" || value === "dark" || value === "system";
+}
 
 type LocaleLayoutProps = {
   children: React.ReactNode;
@@ -75,19 +66,23 @@ export default async function LocaleLayout({
 
   const locale: Locale = localeParam;
   const dir = getDirection(locale);
+  const storedThemeMode = (await cookies()).get(themeCookieName)?.value;
+  const initialThemeMode = isThemeMode(storedThemeMode)
+    ? storedThemeMode
+    : "system";
+  const initialTheme = initialThemeMode === "dark" ? "dark" : "light";
 
   return (
     <html
       lang={locale}
       dir={dir}
-      data-theme="light"
-      data-theme-mode="system"
+      data-theme={initialTheme}
+      data-theme-mode={initialThemeMode}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider initialMode={initialThemeMode}>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -10,10 +10,6 @@ import type { EmployeeNotificationListQueryInput } from "../lib/validators.ts";
 
 export const NOTIFICATION_CHANNELS = {
   IN_APP: NotificationChannel.IN_APP,
-  EMAIL: NotificationChannel.EMAIL,
-  SMS: NotificationChannel.SMS,
-  WHATSAPP: NotificationChannel.WHATSAPP,
-  WEB_PUSH: NotificationChannel.WEB_PUSH,
 } as const;
 
 export class NotificationServiceError extends Error {
@@ -30,43 +26,20 @@ export class NotificationServiceError extends Error {
 
 type NotificationClient = Prisma.TransactionClient | PrismaClient;
 
-type EmailSendInput = {
-  from: string;
-  to: string;
-  subject: string;
-  text: string;
-  html: string;
-};
-
-export type EmailSendFn = (input: EmailSendInput) => Promise<void>;
-
 export type RecheckNotificationInput = {
   userId: string;
-  userEmail: string;
   eventName: string;
   locationName: string | null;
   expiresAt: Date;
-  recheckLink: string;
   now: Date;
-};
-
-export type NotificationWarning = {
-  code: string;
-  message: string;
 };
 
 export type RecheckNotificationResult = {
   inAppCreated: boolean;
-  emailSent: boolean;
-  emailSkipped: boolean;
-  warnings: NotificationWarning[];
 };
 
 type SendRecheckNotificationArgs = RecheckNotificationInput & {
   tx: Prisma.TransactionClient;
-  resendApiKey?: string | null;
-  resendFromEmail?: string | null;
-  sendEmail?: EmailSendFn;
 };
 
 const notificationSelect = {
@@ -133,86 +106,23 @@ function stripEmailHeaderControls(value: string) {
   return value.replace(/[\r\n]+/g, " ").trim();
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
 function buildRecheckNotificationContent({
   eventName,
   locationName,
   expiresAt,
-  recheckLink,
 }: Pick<
   RecheckNotificationInput,
-  "eventName" | "locationName" | "expiresAt" | "recheckLink"
+  "eventName" | "locationName" | "expiresAt"
 >) {
   const locationText = locationName ? ` at ${locationName}` : "";
   const expiresAtText = formatDateForMessage(expiresAt);
   const title = stripEmailHeaderControls(`Recheck required for ${eventName}`);
   const message = `Please confirm you are still at ${eventName}${locationText} before ${expiresAtText}.`;
-  const text = `${message}\n\nOpen your recheck link: ${recheckLink}`;
-  const html = `<p>${escapeHtml(message)}</p><p><a href="${escapeHtml(recheckLink)}">Open recheck</a></p>`;
 
   return {
     title,
     message,
-    text,
-    html,
   };
-}
-
-function extractEmailAddress(sender: string) {
-  const bracketMatch = sender.match(/<([^<>]+)>/);
-
-  return (bracketMatch?.[1] ?? sender).trim().toLowerCase();
-}
-
-function validateResendConfig({
-  resendApiKey,
-  resendFromEmail,
-}: {
-  resendApiKey?: string | null;
-  resendFromEmail?: string | null;
-}): NotificationWarning | null {
-  if (!resendApiKey?.trim() || !resendFromEmail?.trim()) {
-    return {
-      code: "EMAIL_NOT_CONFIGURED",
-      message: "Resend email settings are missing; email was skipped.",
-    };
-  }
-
-  const senderEmail = extractEmailAddress(resendFromEmail);
-
-  if (senderEmail.endsWith(".vercel.app")) {
-    return {
-      code: "EMAIL_SENDER_DOMAIN_NOT_ALLOWED",
-      message:
-        "Resend sender must use a verified sending domain; .vercel.app senders are not allowed.",
-    };
-  }
-
-  return null;
-}
-
-async function sendEmailWithResend({
-  apiKey,
-  email,
-}: {
-  apiKey: string;
-  email: EmailSendInput;
-}) {
-  const { Resend } = await import("resend");
-  const resend = new Resend(apiKey);
-  const result = await resend.emails.send(email);
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
 }
 
 async function createInAppNotification(
@@ -239,77 +149,13 @@ async function createInAppNotification(
 
 export async function sendRecheckNotification({
   tx,
-  resendApiKey,
-  resendFromEmail,
-  sendEmail,
   ...input
 }: SendRecheckNotificationArgs): Promise<RecheckNotificationResult> {
-  const warnings: NotificationWarning[] = [];
-  const content = buildRecheckNotificationContent(input);
-
   await createInAppNotification(tx, input);
 
-  const configWarning = validateResendConfig({
-    resendApiKey,
-    resendFromEmail,
-  });
-
-  if (configWarning || !input.userEmail.trim()) {
-    return {
-      inAppCreated: true,
-      emailSent: false,
-      emailSkipped: true,
-      warnings: [
-        configWarning ?? {
-          code: "EMPLOYEE_EMAIL_NOT_FOUND",
-          message: "Employee email address was not found; email was skipped.",
-        },
-      ],
-    };
-  }
-
-  try {
-    const apiKey = resendApiKey?.trim() ?? "";
-    const fromEmail = resendFromEmail?.trim() ?? "";
-    const email = {
-      from: fromEmail,
-      to: input.userEmail,
-      subject: content.title,
-      text: content.text,
-      html: content.html,
-    };
-
-    if (sendEmail) {
-      await sendEmail(email);
-    } else {
-      await sendEmailWithResend({
-        apiKey,
-        email,
-      });
-    }
-
-    return {
-      inAppCreated: true,
-      emailSent: true,
-      emailSkipped: false,
-      warnings,
-    };
-  } catch (error) {
-    warnings.push({
-      code: "EMAIL_SEND_FAILED",
-      message:
-        error instanceof Error
-          ? error.message
-          : "Resend email sending failed.",
-    });
-
-    return {
-      inAppCreated: true,
-      emailSent: false,
-      emailSkipped: true,
-      warnings,
-    };
-  }
+  return {
+    inAppCreated: true,
+  };
 }
 
 export async function listNotificationsForEmployee({
