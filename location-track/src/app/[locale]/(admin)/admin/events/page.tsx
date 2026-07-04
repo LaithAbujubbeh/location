@@ -24,9 +24,9 @@ export default async function AdminEventsPage({ params }: AdminEventsPageProps) 
   const messages = await getMessages(locale);
 
   return (
-    <div className="grid gap-5">
-      <header className="grid gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
+    <div className="grid min-w-0 gap-5">
+      <header className="grid min-w-0 gap-1">
+        <h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">
           {messages.admin.events.title}
         </h1>
         <p className="max-w-2xl text-sm leading-6 text-text-muted">
@@ -34,7 +34,7 @@ export default async function AdminEventsPage({ params }: AdminEventsPageProps) 
         </p>
       </header>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle>{messages.admin.events.cardTitle}</CardTitle>
           <CardDescription>
@@ -42,11 +42,11 @@ export default async function AdminEventsPage({ params }: AdminEventsPageProps) 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-dashed border-border-strong bg-surface px-4 py-8 text-center">
+          <div className="rounded-md border border-dashed border-border-strong bg-surface px-3 py-8 text-center sm:px-6 sm:py-10">
             <p className="text-sm font-medium text-foreground">
               {messages.admin.events.emptyTitle}
             </p>
-            <p className="mt-1 text-sm text-text-muted">
+            <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-text-muted">
               {messages.admin.events.emptyDescription}
             </p>
           </div>

@@ -23,7 +23,7 @@ export function ThemeToggle({ className, labels }: ThemeToggleProps) {
     <div
       aria-label={labels.ariaLabel}
       className={cn(
-        "inline-flex max-w-full rounded-md border border-border bg-surface p-1 shadow-[var(--shadow-sm)]",
+        "inline-flex w-full max-w-full min-w-0 rounded-md border border-border bg-surface p-1 shadow-[var(--shadow-sm)]",
         className,
       )}
       role="group"
@@ -31,9 +31,10 @@ export function ThemeToggle({ className, labels }: ThemeToggleProps) {
       {(["light", "dark", "system"] as const).map((themeMode) => (
         <Button
           aria-pressed={mode === themeMode}
-          className="h-8 min-w-0 flex-1 px-2 text-xs capitalize sm:px-3"
+          className="min-w-0 flex-1 basis-0 px-2 text-xs capitalize leading-tight sm:px-3"
           key={themeMode}
           onClick={() => setMode(themeMode)}
+          size="sm"
           type="button"
           variant={mode === themeMode ? "primary" : "ghost"}
         >

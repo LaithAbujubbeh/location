@@ -49,8 +49,8 @@ export function AdminShell({
   const displayName = user.name || user.email;
 
   return (
-    <div className="min-h-dvh bg-background text-foreground lg:flex">
-      <aside className="hidden w-72 shrink-0 border-e border-border bg-surface-elevated lg:flex lg:flex-col">
+    <div className="min-h-dvh overflow-x-clip bg-background text-foreground lg:flex">
+      <aside className="hidden w-64 shrink-0 border-e border-border bg-surface-elevated xl:w-72 lg:flex lg:flex-col">
         <div className="border-b border-border p-5">
           <Link className="grid gap-1" href={eventsHref}>
             <span className="text-lg font-semibold tracking-tight">
@@ -85,8 +85,8 @@ export function AdminShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur lg:static lg:bg-transparent lg:px-6 lg:shadow-none">
-          <div className="mx-auto grid w-full max-w-6xl gap-3 sm:flex sm:items-center sm:justify-between">
+        <header className="sticky top-0 z-20 border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5 lg:static lg:bg-transparent lg:px-6 lg:shadow-none">
+          <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <div className="flex min-w-0 items-center gap-3 lg:hidden">
               <AdminMobileSidebar
                 eventsHref={eventsHref}
@@ -109,18 +109,18 @@ export function AdminShell({
                 >
                   {labels.appName}
                 </Link>
-                <p className="text-xs text-text-muted">{labels.areaLabel}</p>
+                <p className="truncate text-xs text-text-muted">
+                  {labels.areaLabel}
+                </p>
               </div>
             </div>
 
-            <div className="grid w-full gap-2 min-[430px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center lg:ms-auto">
+            <div className="grid w-full min-w-0 gap-2 min-[390px]:grid-cols-2 sm:w-72 sm:justify-self-end md:w-80 lg:ms-auto">
               <LanguageToggle
-                className="w-full sm:w-auto"
                 currentLocale={locale}
                 labels={labels.language}
               />
               <ThemeToggle
-                className="w-full sm:w-auto"
                 labels={{
                   ariaLabel: labels.theme.label,
                   dark: labels.theme.dark,
@@ -132,7 +132,7 @@ export function AdminShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
           {children}
         </main>
       </div>

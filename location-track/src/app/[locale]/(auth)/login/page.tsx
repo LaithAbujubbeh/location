@@ -45,25 +45,23 @@ export default async function LoginPage({
   }
 
   return (
-    <main className="grid min-h-dvh bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-md flex-col justify-center gap-5">
-        <header className="grid gap-3 sm:flex sm:items-center sm:justify-between">
-          <div className="grid gap-1">
+    <main className="flex min-h-[100dvh] items-start bg-background px-4 py-6 text-foreground sm:items-center sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-5">
+        <header className="grid min-w-0 gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+          <div className="grid min-w-0 gap-1">
             <p className="text-sm font-medium text-text-muted">
               {messages.common.appName}
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="break-words text-2xl font-semibold tracking-tight">
               {messages.auth.login.title}
             </h1>
           </div>
-          <div className="grid w-full gap-2 min-[430px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap">
+          <div className="grid w-full min-w-0 gap-2 min-[390px]:grid-cols-2 sm:w-72 sm:justify-self-end md:w-80">
             <LanguageToggle
-              className="w-full sm:w-auto"
               currentLocale={locale}
               labels={messages.language}
             />
             <ThemeToggle
-              className="w-full sm:w-auto"
               labels={{
                 ariaLabel: messages.theme.label,
                 dark: messages.theme.dark,

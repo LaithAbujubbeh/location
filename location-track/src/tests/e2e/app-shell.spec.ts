@@ -72,8 +72,10 @@ test("login shell has no horizontal overflow on phone, tablet, and desktop", asy
 }) => {
   const viewports = [
     { width: 360, height: 740 },
+    { width: 390, height: 844 },
     { width: 768, height: 1024 },
-    { width: 1280, height: 800 },
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
   ];
 
   for (const viewport of viewports) {

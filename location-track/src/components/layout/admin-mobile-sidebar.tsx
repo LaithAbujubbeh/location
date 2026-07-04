@@ -105,8 +105,7 @@ export function AdminMobileSidebar({
 
       <aside
         className={cn(
-          "fixed top-0 z-50 flex h-dvh w-[min(20rem,calc(100vw-2rem))] flex-col border-border bg-surface-elevated shadow-[var(--shadow-md)] transition-transform duration-200 ease-out lg:hidden",
-          isRtl ? "right-0 border-s" : "left-0 border-e",
+          "fixed inset-y-0 start-0 z-50 flex h-dvh w-[86vw] max-w-80 flex-col border-e border-border bg-surface-elevated shadow-[var(--shadow-md)] transition-transform duration-200 ease-out sm:w-80 lg:hidden",
           isOpen
             ? "translate-x-0"
             : isRtl
@@ -114,7 +113,7 @@ export function AdminMobileSidebar({
               : "-translate-x-full",
         )}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-border p-5">
+        <div className="flex items-start justify-between gap-3 border-b border-border p-4 sm:p-5">
           <Link className="grid min-w-0 gap-1" href={eventsHref}>
             <span className="truncate text-lg font-semibold tracking-tight">
               {labels.appName}
@@ -123,7 +122,7 @@ export function AdminMobileSidebar({
           </Link>
           <Button
             aria-label={labels.closeMenu}
-            className="h-9 w-9 p-0"
+            className="h-9 w-9 shrink-0 p-0"
             onClick={() => setIsOpen(false)}
             type="button"
             variant="ghost"

@@ -63,8 +63,8 @@ export function LoginForm({ labels, nextPath }: LoginFormProps) {
   }
 
   return (
-    <form className="grid gap-4" onSubmit={handleSubmit}>
-      <label className="grid gap-2 text-sm font-medium text-foreground">
+    <form className="grid min-w-0 gap-5" onSubmit={handleSubmit}>
+      <label className="grid min-w-0 gap-2 text-sm font-medium text-foreground">
         {labels.email}
         <Input
           autoComplete="email"
@@ -74,7 +74,7 @@ export function LoginForm({ labels, nextPath }: LoginFormProps) {
         />
       </label>
 
-      <label className="grid gap-2 text-sm font-medium text-foreground">
+      <label className="grid min-w-0 gap-2 text-sm font-medium text-foreground">
         {labels.password}
         <Input
           autoComplete="current-password"
@@ -85,7 +85,7 @@ export function LoginForm({ labels, nextPath }: LoginFormProps) {
       </label>
 
       {error ? (
-        <p className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+        <p className="break-words rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}

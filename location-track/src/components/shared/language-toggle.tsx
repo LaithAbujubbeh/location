@@ -54,15 +54,16 @@ export function LanguageToggle({
     <div
       aria-label={labels.label}
       className={cn(
-        "inline-flex max-w-full rounded-md border border-border bg-surface p-1 shadow-[var(--shadow-sm)]",
+        "inline-flex w-full max-w-full min-w-0 rounded-md border border-border bg-surface p-1 shadow-[var(--shadow-sm)]",
         className,
       )}
       role="group"
     >
       <Button
         aria-pressed={currentLocale === "en"}
-        className="h-8 min-w-0 flex-1 px-2 text-xs sm:px-3"
+        className="min-w-0 flex-1 basis-0 px-2 text-xs leading-tight sm:px-3"
         onClick={() => switchLocale("en")}
+        size="sm"
         type="button"
         variant={currentLocale === "en" ? "primary" : "ghost"}
       >
@@ -70,8 +71,9 @@ export function LanguageToggle({
       </Button>
       <Button
         aria-pressed={currentLocale === "ar"}
-        className="h-8 min-w-0 flex-1 px-2 text-xs sm:px-3"
+        className="min-w-0 flex-1 basis-0 px-2 text-xs leading-tight sm:px-3"
         onClick={() => switchLocale("ar")}
+        size="sm"
         type="button"
         variant={currentLocale === "ar" ? "primary" : "ghost"}
       >
