@@ -1,12 +1,6 @@
 import { notFound } from "next/navigation";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { EmployeeEventsClient } from "@/components/employee/employee-events-client";
 import { getMessages, isLocale, type Locale } from "@/lib/i18n";
 
 type EmployeeEventsPageProps = {
@@ -36,24 +30,11 @@ export default async function EmployeeEventsPage({
         </p>
       </header>
 
-      <Card className="overflow-hidden">
-        <CardHeader>
-          <CardTitle>{messages.employee.events.cardTitle}</CardTitle>
-          <CardDescription>
-            {messages.employee.events.cardDescription}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border border-dashed border-border-strong bg-surface px-3 py-8 text-center sm:px-6 sm:py-10">
-            <p className="text-sm font-medium text-foreground">
-              {messages.employee.events.emptyTitle}
-            </p>
-            <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-text-muted">
-              {messages.employee.events.emptyDescription}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <EmployeeEventsClient
+        labels={messages.employee.events}
+        locale={locale}
+        statusLabels={messages.status}
+      />
     </div>
   );
 }

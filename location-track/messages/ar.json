@@ -63,16 +63,72 @@
       "cardTitle": "الفعاليات المعينة",
       "cardDescription": "تابع فعاليات الحضور المعينة لك.",
       "emptyTitle": "لا توجد فعاليات معينة",
-      "emptyDescription": "ستظهر التعيينات النشطة والقادمة هنا."
+      "emptyDescription": "ستظهر التعيينات النشطة والقادمة هنا.",
+      "errorTitle": "تعذر تحميل الفعاليات",
+      "errorDescription": "حدّث القائمة أو حاول مرة أخرى بعد قليل.",
+      "noLocation": "لم يتم تحديد الموقع",
+      "noRecheck": "لا توجد إعادة تحقق مخططة",
+      "fields": {
+        "timeWindow": "الوقت",
+        "nextRecheck": "إعادة التحقق التالية"
+      },
+      "actions": {
+        "checkIn": "تسجيل الحضور",
+        "checkOut": "تسجيل الخروج",
+        "retry": "حاول مرة أخرى",
+        "viewDetails": "عرض التفاصيل",
+        "viewRecheck": "عرض إعادة التحقق"
+      }
+    },
+    "eventDetails": {
+      "title": "تفاصيل الفعالية",
+      "description": "راجع التعيين وإعادات التحقق المخططة والإجراءات المطلوبة.",
+      "backToEvents": "العودة إلى الفعاليات",
+      "noLocation": "لم يتم تحديد الموقع",
+      "meters": "متر",
+      "notCheckedIn": "لم يتم تسجيل الحضور",
+      "notSubmitted": "لم يتم الإرسال بعد",
+      "checkoutRequired": "تسجيل الخروج مطلوب",
+      "checkoutNotRequired": "تسجيل الخروج غير مطلوب",
+      "rechecksTitle": "مواعيد إعادة التحقق الثابتة",
+      "rechecksDescription": "تم تحديد هذه المواعيد من قبل المدير.",
+      "noRechecksTitle": "لا توجد إعادة تحقق مخططة",
+      "noRechecksDescription": "لا تحتوي هذه الفعالية على مواعيد إعادة تحقق ثابتة.",
+      "instructionsTitle": "التعليمات",
+      "instructions": [
+        "وصل إلى موقع الفعالية قبل تسجيل الحضور.",
+        "أبق الوصول إلى الموقع مفعلا أثناء حضورك.",
+        "أرسل إعادة التحقق النشطة من التطبيق عند توفرها.",
+        "سجل الخروج قبل المغادرة إذا كان تسجيل الخروج مطلوبا."
+      ],
+      "errorTitle": "تعذر تحميل تفاصيل الفعالية",
+      "errorDescription": "حدّث الصفحة أو عد إلى قائمة الفعاليات.",
+      "fields": {
+        "checkIn": "وقت تسجيل الحضور",
+        "checkout": "تسجيل الخروج",
+        "radius": "النطاق المسموح",
+        "submittedAt": "تم الإرسال",
+        "timeWindow": "الوقت"
+      },
+      "actions": {
+        "checkIn": "تسجيل الحضور",
+        "checkOut": "تسجيل الخروج",
+        "retry": "حاول مرة أخرى",
+        "submitRecheck": "إرسال إعادة التحقق"
+      }
     }
   },
   "status": {
+    "active": "نشط",
     "pending": "قيد الانتظار",
+    "scheduled": "مجدول",
     "inProgress": "قيد التنفيذ",
     "completed": "مكتمل",
     "suspicious": "مريب",
     "failed": "فشل",
     "missed": "فائت",
+    "passed": "تم بنجاح",
+    "expired": "منتهي",
     "accepted": "مقبول",
     "rejected": "مرفوض"
   }

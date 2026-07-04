@@ -1,0 +1,151 @@
+import type { AssignmentStatus, EventStatus, RecheckStatus } from "@prisma/client";
+
+import type { ApiErrorBody, ApiSuccessBody } from "@/lib/api-response";
+import type { Locale } from "@/lib/i18n";
+
+export const employeeEventQueryOptions = {
+  refetchOnWindowFocus: true,
+  staleTime: 10_000,
+} as const;
+
+export const employeeEventQueryKeys = {
+  employeeEventDetails: (eventId: string) =>
+    ["employeeEventDetails", eventId] as const,
+  employeeEvents: () => ["employeeEvents"] as const,
+};
+
+export type EmployeeEventRecheckSlot = {
+  id: string;
+  startsAt: string;
+  expiresAt: string;
+  status: RecheckStatus | null;
+  submittedAt: string | null;
+  completedAt: string | null;
+};
+
+export type EmployeeEventItem = {
+  assignment: {
+    id: string;
+    status: AssignmentStatus;
+    checkedInAt: string | null;
+    checkedOutAt: string | null;
+    completedAt: string | null;
+  };
+  event: {
+    id: string;
+    name: string;
+    locationName: string | null;
+    latitude: number;
+    longitude: number;
+    radiusMeters: number;
+    startsAt: string;
+    endsAt: string;
+    status: EventStatus;
+    requirePhoto: boolean;
+    requireCheckout: boolean;
+    recheckSlots: EmployeeEventRecheckSlot[];
+  };
+};
+
+export type EmployeeEventListResult = {
+  items: EmployeeEventItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+};
+
+type ApiBody<T> = ApiSuccessBody<T> | ApiErrorBody;
+
+export class EmployeeEventApiError extends Error {
+  code: string;
+  status: number;
+
+  constructor(code: string, message: string, status: number) {
+    super(message);
+    this.code = code;
+    this.status = status;
+  }
+}
+
+async function fetchEmployeeApi<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    cache: "no-store",
+    credentials: "same-origin",
+  });
+  const body = (await response.json()) as ApiBody<T>;
+
+  if (!response.ok || !body.ok) {
+    const error = body.ok
+      ? { code: "REQUEST_FAILED", message: "Request failed." }
+      : body.error;
+
+    throw new EmployeeEventApiError(error.code, error.message, response.status);
+  }
+
+  return body.data;
+}
+
+export function fetchEmployeeEvents() {
+  return fetchEmployeeApi<EmployeeEventListResult>("/api/employee/events");
+}
+
+export function fetchEmployeeEventDetails(eventId: string) {
+  return fetchEmployeeApi<EmployeeEventItem>(
+    `/api/employee/events/${encodeURIComponent(eventId)}`,
+  );
+}
+
+export function formatDateTime(value: string, locale: Locale) {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+export function formatDateRange(startsAt: string, endsAt: string, locale: Locale) {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).formatRange(new Date(startsAt), new Date(endsAt));
+}
+
+export function findNextRecheckSlot(
+  slots: EmployeeEventRecheckSlot[],
+  now = new Date(),
+) {
+  return (
+    slots.find((slot) => {
+      const status = slot.status;
+
+      if (status === "COMPLETED" || status === "PASSED") {
+        return false;
+      }
+
+      return new Date(slot.expiresAt).getTime() >= now.getTime();
+    }) ?? null
+  );
+}
+
+export function findActionableRecheckSlot(slots: EmployeeEventRecheckSlot[]) {
+  return (
+    slots.find((slot) => slot.status === "PENDING" || slot.status === "ACTIVE") ??
+    null
+  );
+}
+
+export function canCheckIn(event: EmployeeEventItem) {
+  return event.assignment.checkedInAt === null;
+}
+
+export function canCheckOut(event: EmployeeEventItem) {
+  return (
+    event.event.requireCheckout &&
+    event.assignment.checkedInAt !== null &&
+    event.assignment.checkedOutAt === null
+  );
+}

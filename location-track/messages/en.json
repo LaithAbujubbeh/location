@@ -63,16 +63,72 @@
       "cardTitle": "Assigned events",
       "cardDescription": "Track assigned attendance events.",
       "emptyTitle": "No assigned events",
-      "emptyDescription": "Active and upcoming assignments will appear here."
+      "emptyDescription": "Active and upcoming assignments will appear here.",
+      "errorTitle": "Events could not be loaded",
+      "errorDescription": "Refresh the list or try again in a moment.",
+      "noLocation": "Location not specified",
+      "noRecheck": "No planned recheck",
+      "fields": {
+        "timeWindow": "Time",
+        "nextRecheck": "Next recheck"
+      },
+      "actions": {
+        "checkIn": "Check In",
+        "checkOut": "Check Out",
+        "retry": "Try again",
+        "viewDetails": "View details",
+        "viewRecheck": "View recheck"
+      }
+    },
+    "eventDetails": {
+      "title": "Event details",
+      "description": "Review your assignment, planned rechecks, and required actions.",
+      "backToEvents": "Back to events",
+      "noLocation": "Location not specified",
+      "meters": "meters",
+      "notCheckedIn": "Not checked in",
+      "notSubmitted": "Not submitted yet",
+      "checkoutRequired": "Checkout required",
+      "checkoutNotRequired": "Checkout not required",
+      "rechecksTitle": "Fixed recheck slots",
+      "rechecksDescription": "These recheck times were defined by the admin.",
+      "noRechecksTitle": "No rechecks planned",
+      "noRechecksDescription": "This event does not have fixed recheck slots.",
+      "instructionsTitle": "Instructions",
+      "instructions": [
+        "Arrive at the event location before checking in.",
+        "Keep location access enabled while you are attending.",
+        "Submit active rechecks from the app when they become available.",
+        "Check out before leaving if checkout is required."
+      ],
+      "errorTitle": "Event details could not be loaded",
+      "errorDescription": "Refresh the page or return to your events list.",
+      "fields": {
+        "checkIn": "Check-in time",
+        "checkout": "Checkout",
+        "radius": "Allowed radius",
+        "submittedAt": "Submitted",
+        "timeWindow": "Time"
+      },
+      "actions": {
+        "checkIn": "Check In",
+        "checkOut": "Check Out",
+        "retry": "Try again",
+        "submitRecheck": "Submit Recheck"
+      }
     }
   },
   "status": {
+    "active": "Active",
     "pending": "Pending",
+    "scheduled": "Scheduled",
     "inProgress": "In Progress",
     "completed": "Completed",
     "suspicious": "Suspicious",
     "failed": "Failed",
     "missed": "Missed",
+    "passed": "Passed",
+    "expired": "Expired",
     "accepted": "Accepted",
     "rejected": "Rejected"
   }

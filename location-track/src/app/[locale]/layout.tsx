@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Geist, Geist_Mono } from "next/font/google";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import {
   getDirection,
@@ -82,7 +83,11 @@ export default async function LocaleLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <ThemeProvider initialMode={initialThemeMode}>{children}</ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider initialMode={initialThemeMode}>
+            {children}
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );
