@@ -32,6 +32,7 @@ export default async function AdminLayout({
         language: messages.language,
         logout: messages.auth.logout,
         nav: messages.admin.nav,
+        notifications: messages.notifications,
         openMenu: messages.admin.shell.openMenu,
         signedInAs: messages.auth.signedInAs,
         theme: messages.theme,

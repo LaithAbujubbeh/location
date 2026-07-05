@@ -17,6 +17,43 @@
     "dark": "Dark",
     "system": "System"
   },
+  "notifications": {
+    "title": "Notifications",
+    "shortTitle": "Notifications",
+    "description": "Review in-app attendance, device, and recheck updates.",
+    "cardTitle": "In-app notifications",
+    "cardDescription": "{count} unread notifications",
+    "open": "Open notifications",
+    "badgeOverflow": "99+",
+    "emptyTitle": "No notifications to display",
+    "emptyDescription": "New in-app notifications will appear here.",
+    "errorTitle": "Notifications could not be loaded",
+    "errorDescription": "Refresh the list or try again in a moment.",
+    "state": {
+      "read": "Read",
+      "unread": "Unread"
+    },
+    "types": {
+      "ATTENDANCE_REVIEW": "Review",
+      "DEVICE": "Device",
+      "RECHECK": "Recheck"
+    },
+    "actions": {
+      "delete": "Delete",
+      "deleteAll": "Delete all",
+      "markAllRead": "Mark all read",
+      "markRead": "Mark read",
+      "openLink": "Open",
+      "retry": "Try again",
+      "showAll": "Show all",
+      "showUnread": "Unread only"
+    },
+    "pagination": {
+      "next": "Next",
+      "previous": "Previous",
+      "summary": "Page {page} of {totalPages}, {total} notifications"
+    }
+  },
   "auth": {
     "login": {
       "title": "Sign in",
@@ -401,6 +438,11 @@
       "notSubmitted": "Not submitted yet",
       "meters": "{value} meters",
       "recheckRecordTitle": "Recheck record",
+      "map": {
+        "ariaLabel": "Map showing event location and submitted proof location",
+        "eventMarker": "Blue marker: event location and allowed radius",
+        "proofMarker": "Amber marker: submitted proof location and GPS accuracy"
+      },
       "sections": {
         "filtersDescription": "Filter the loaded timeline by employee, assignment status, or proof type.",
         "filtersTitle": "Filters",
@@ -430,6 +472,7 @@
         "reason": "Reason",
         "recheckCount": "Rechecks",
         "startsAt": "Starts at",
+        "submittedLocation": "Submitted location",
         "submittedAt": "Submitted",
         "timeWindow": "Time"
       },

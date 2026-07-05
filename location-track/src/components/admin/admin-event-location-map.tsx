@@ -12,6 +12,8 @@ import {
   useMap,
 } from "react-leaflet";
 
+import { LeafletMapSizeSync } from "@/components/admin/leaflet-map-size-sync";
+
 const DEFAULT_ZOOM = 15;
 
 type AdminEventLocationMapProps = {
@@ -31,6 +33,7 @@ function MapCenterSync({
 
   useEffect(() => {
     map.setView([latitude, longitude], Math.max(map.getZoom(), DEFAULT_ZOOM));
+    map.invalidateSize({ animate: false });
   }, [latitude, longitude, map]);
 
   return null;
@@ -69,6 +72,7 @@ export function AdminEventLocationMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <LeafletMapSizeSync />
         <MapCenterSync latitude={latitude} longitude={longitude} />
         <Marker icon={markerIcon} position={center} />
         {safeRadiusMeters ? (

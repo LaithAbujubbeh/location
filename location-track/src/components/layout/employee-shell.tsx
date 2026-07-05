@@ -2,8 +2,9 @@ import Link from "next/link";
 
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LanguageToggle } from "@/components/shared/language-toggle";
+import { NotificationBell } from "@/components/shared/notification-bell";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import type { Locale } from "@/lib/i18n";
+import type { Locale, Messages } from "@/lib/i18n";
 
 type EmployeeShellLabels = {
   appName: string;
@@ -13,6 +14,7 @@ type EmployeeShellLabels = {
   nav: {
     events: string;
   };
+  notifications: Messages["notifications"];
   language: {
     label: string;
     english: string;
@@ -48,7 +50,7 @@ export function EmployeeShell({
   return (
     <div className="min-h-dvh overflow-x-clip bg-background text-foreground">
       <div className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col bg-background">
-        <header className="sticky top-0 z-20 border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5">
+        <header className="sticky top-0 z-[900] border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5">
           <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
             <Link className="grid min-w-0 gap-0.5" href={eventsHref}>
               <span className="truncate text-base font-semibold">
@@ -58,11 +60,9 @@ export function EmployeeShell({
                 {labels.areaLabel}
               </span>
             </Link>
-            <div className="grid w-full min-w-0 gap-2 min-[390px]:grid-cols-2 sm:w-72 md:w-80">
-              <LanguageToggle
-                currentLocale={locale}
-                labels={labels.language}
-              />
+            <div className="grid w-full z-40 min-w-0 gap-2 min-[390px]:grid-cols-2 sm:w-[28rem] sm:grid-cols-3">
+              <NotificationBell labels={labels.notifications} locale={locale} />
+              <LanguageToggle currentLocale={locale} labels={labels.language} />
               <ThemeToggle
                 labels={{
                   ariaLabel: labels.theme.label,
@@ -91,7 +91,7 @@ export function EmployeeShell({
 
         <nav
           aria-label={labels.areaLabel}
-          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface-elevated/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[var(--shadow-md)] backdrop-blur"
+          className="fixed inset-x-0 bottom-0 z-[900] border-t border-border bg-surface-elevated/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[var(--shadow-md)] backdrop-blur"
         >
           <div className="mx-auto w-full max-w-7xl">
             <Link

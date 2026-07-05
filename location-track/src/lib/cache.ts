@@ -24,6 +24,10 @@ export const clientQueryKeys = {
       list: () => ["admin", "users", "list"] as const,
     },
   },
+  notifications: {
+    list: () => ["notifications", "list"] as const,
+    unread: () => ["notifications", "unread"] as const,
+  },
   employee: {
     devices: {
       status: (userId: string) =>
@@ -68,7 +72,7 @@ export const mutationInvalidationPlan = {
   ],
   adminReviewDevice: ["admin.devices.list", "employee.devices.status"],
   adminUserMutation: ["admin.users.list", "admin.users.detail"],
-  employeeReadNotification: ["employee.notifications.list"],
+  employeeReadNotification: ["employee.notifications.list", "notifications.list"],
 } as const;
 
 export function withPrivateNoStore(response: Response) {

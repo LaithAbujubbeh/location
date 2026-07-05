@@ -22,6 +22,7 @@ import {
   type DeviceTrustRejection,
   requireTrustedUserDeviceForAction,
 } from "./device.service.ts";
+import { notifyAdminsOfSuspiciousProof } from "./notification.service.ts";
 
 export class CheckOutServiceError extends Error {
   readonly status: number;
@@ -430,6 +431,13 @@ export async function checkOutFromEventInTransaction(
       createdAt: true,
     },
   });
+
+  if (decision.proofStatus === ProofStatus.SUSPICIOUS) {
+    await notifyAdminsOfSuspiciousProof(tx, {
+      eventId: assignment.event.id,
+      now,
+    });
+  }
 
   const assignmentUpdate = await tx.eventAssignment.updateMany({
     where: {

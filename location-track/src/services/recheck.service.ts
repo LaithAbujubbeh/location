@@ -24,6 +24,7 @@ import {
   type DeviceTrustRejection,
   requireTrustedUserDeviceForAction,
 } from "./device.service.ts";
+import { notifyAdminsOfSuspiciousProof } from "./notification.service.ts";
 
 const RECHECK_TOKEN_BYTES = 32;
 
@@ -179,11 +180,12 @@ const recheckSubmitSelect = {
       employeeId: true,
       status: true,
       failureReason: true,
-      event: {
-        select: {
-          title: true,
-          locationName: true,
-          latitude: true,
+        event: {
+          select: {
+            id: true,
+            title: true,
+            locationName: true,
+            latitude: true,
           longitude: true,
           radiusMeters: true,
           photoRequired: true,
@@ -524,6 +526,7 @@ export async function getRecheckTokenInfo({
         select: {
           event: {
             select: {
+              id: true,
               title: true,
               locationName: true,
               photoRequired: true,
@@ -852,6 +855,13 @@ async function submitSelectedRecheckProofInTransaction(
       createdAt: true,
     },
   });
+
+  if (decision.proofStatus === ProofStatus.SUSPICIOUS) {
+    await notifyAdminsOfSuspiciousProof(tx, {
+      eventId: recheck.assignment.event.id,
+      now,
+    });
+  }
 
   const recheckUpdate = await tx.eventRecheck.updateMany({
     where: {

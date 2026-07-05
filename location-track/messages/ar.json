@@ -17,6 +17,43 @@
     "dark": "داكن",
     "system": "النظام"
   },
+  "notifications": {
+    "title": "الإشعارات",
+    "shortTitle": "الإشعارات",
+    "description": "راجع تحديثات الحضور والأجهزة وإعادة التحقق داخل التطبيق.",
+    "cardTitle": "إشعارات التطبيق",
+    "cardDescription": "{count} إشعارات غير مقروءة",
+    "open": "فتح الإشعارات",
+    "badgeOverflow": "99+",
+    "emptyTitle": "لا توجد إشعارات للعرض",
+    "emptyDescription": "ستظهر الإشعارات الجديدة داخل التطبيق هنا.",
+    "errorTitle": "تعذر تحميل الإشعارات",
+    "errorDescription": "حدّث القائمة أو حاول مرة أخرى بعد قليل.",
+    "state": {
+      "read": "مقروء",
+      "unread": "غير مقروء"
+    },
+    "types": {
+      "ATTENDANCE_REVIEW": "مراجعة",
+      "DEVICE": "جهاز",
+      "RECHECK": "إعادة تحقق"
+    },
+    "actions": {
+      "delete": "حذف",
+      "deleteAll": "حذف الكل",
+      "markAllRead": "تعليم الكل كمقروء",
+      "markRead": "تعليم كمقروء",
+      "openLink": "فتح",
+      "retry": "حاول مرة أخرى",
+      "showAll": "عرض الكل",
+      "showUnread": "غير المقروء فقط"
+    },
+    "pagination": {
+      "next": "التالي",
+      "previous": "السابق",
+      "summary": "الصفحة {page} من {totalPages}، {total} إشعارات"
+    }
+  },
   "auth": {
     "login": {
       "title": "تسجيل الدخول",
@@ -401,6 +438,11 @@
       "notSubmitted": "لم يتم الإرسال بعد",
       "meters": "{value} متر",
       "recheckRecordTitle": "سجل إعادة تحقق",
+      "map": {
+        "ariaLabel": "خريطة تعرض موقع الفعالية وموقع إثبات الحضور المرسل",
+        "eventMarker": "العلامة الزرقاء: موقع الفعالية والنطاق المسموح",
+        "proofMarker": "العلامة الكهرمانية: موقع الإثبات المرسل ودقة GPS"
+      },
       "sections": {
         "filtersDescription": "صفّ السجل المحمل حسب الموظف أو حالة التعيين أو نوع الإثبات.",
         "filtersTitle": "الفلاتر",
@@ -430,6 +472,7 @@
         "reason": "السبب",
         "recheckCount": "إعادات التحقق",
         "startsAt": "يبدأ في",
+        "submittedLocation": "الموقع المرسل",
         "submittedAt": "تم الإرسال",
         "timeWindow": "الوقت"
       },

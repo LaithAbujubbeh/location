@@ -15,6 +15,7 @@ function createCronTx({
 }: {
   activationCandidates?: Array<{
     id: string;
+    eventId?: string;
     employeeId: string;
     expiresAt: Date;
     eventName: string;
@@ -23,6 +24,8 @@ function createCronTx({
   expiredCandidates?: Array<{
     id: string;
     assignmentId: string;
+    employeeId?: string;
+    eventId?: string;
   }>;
 } = {}) {
   const recheckFindManyCalls: unknown[] = [];
@@ -44,6 +47,7 @@ function createCronTx({
             expiresAt: candidate.expiresAt,
             assignment: {
               event: {
+                id: candidate.eventId ?? "event_1",
                 title: candidate.eventName,
                 locationName: candidate.locationName,
               },
@@ -51,7 +55,14 @@ function createCronTx({
           }));
         }
 
-        return expiredCandidates;
+        return expiredCandidates.map((candidate) => ({
+          id: candidate.id,
+          assignmentId: candidate.assignmentId,
+          employeeId: candidate.employeeId ?? "employee_1",
+          assignment: {
+            eventId: candidate.eventId ?? "event_1",
+          },
+        }));
       },
       updateMany: async (args: unknown) => {
         recheckUpdateManyCalls.push(args);
@@ -118,7 +129,7 @@ test("in-app notification is created when a fixed recheck becomes pending", asyn
   );
   assert.equal(
     (notificationCreateCalls[0] as { data: { link: string | null } }).data.link,
-    null,
+    "/employee/events/event_1/recheck",
   );
 });
 
@@ -235,6 +246,35 @@ test("expired scheduled and pending fixed rechecks become missed", async () => {
       completedAt: now,
     },
   });
+});
+
+test("missed recheck creates employee notification", async () => {
+  const now = new Date("2026-07-10T12:00:00.000Z");
+  const { tx, notificationCreateCalls } = createCronTx({
+    expiredCandidates: [
+      {
+        id: "recheck_1",
+        assignmentId: "assignment_1",
+        employeeId: "employee_1",
+        eventId: "event_1",
+      },
+    ],
+  });
+
+  const result = await processScheduledRechecksInTransaction(tx as never, {
+    now,
+  });
+
+  assert.equal(result.missedCount, 1);
+  assert.equal(result.notifications.inAppCreatedCount, 1);
+  assert.equal(
+    (notificationCreateCalls[0] as { data: { userId: string } }).data.userId,
+    "employee_1",
+  );
+  assert.equal(
+    (notificationCreateCalls[0] as { data: { link: string } }).data.link,
+    "/employee/events/event_1",
+  );
 });
 
 test("submitted rechecks are not marked missed", async () => {

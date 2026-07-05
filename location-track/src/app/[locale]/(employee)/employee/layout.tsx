@@ -31,6 +31,7 @@ export default async function EmployeeLayout({
         language: messages.language,
         logout: messages.auth.logout,
         nav: messages.employee.nav,
+        notifications: messages.notifications,
         signedInAs: messages.auth.signedInAs,
         theme: messages.theme,
       }}

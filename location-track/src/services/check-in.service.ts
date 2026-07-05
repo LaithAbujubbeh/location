@@ -22,6 +22,7 @@ import {
   type DeviceTrustRejection,
   requireTrustedUserDeviceForAction,
 } from "./device.service.ts";
+import { notifyAdminsOfSuspiciousProof } from "./notification.service.ts";
 import { scheduleRechecksForAssignment } from "./recheck.service.ts";
 
 export class CheckInServiceError extends Error {
@@ -398,6 +399,13 @@ export async function checkInToEventInTransaction(
       createdAt: true,
     },
   });
+
+  if (decision.proofStatus === ProofStatus.SUSPICIOUS) {
+    await notifyAdminsOfSuspiciousProof(tx, {
+      eventId: assignment.event.id,
+      now,
+    });
+  }
 
   let updatedAssignment: CheckInAssignmentResponseState = {
     id: assignment.id,

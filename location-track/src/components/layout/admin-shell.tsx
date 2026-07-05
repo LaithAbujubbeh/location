@@ -3,8 +3,9 @@ import Link from "next/link";
 import { AdminMobileSidebar } from "@/components/layout/admin-mobile-sidebar";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LanguageToggle } from "@/components/shared/language-toggle";
+import { NotificationBell } from "@/components/shared/notification-bell";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import type { Locale } from "@/lib/i18n";
+import type { Locale, Messages } from "@/lib/i18n";
 
 type AdminShellLabels = {
   appName: string;
@@ -18,6 +19,7 @@ type AdminShellLabels = {
     events: string;
     users: string;
   };
+  notifications: Messages["notifications"];
   language: {
     label: string;
     english: string;
@@ -93,7 +95,7 @@ export function AdminShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5 lg:static lg:bg-transparent lg:px-6 lg:shadow-none">
+        <header className="sticky top-0 z-[900] border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5 lg:static lg:bg-transparent lg:px-6 lg:shadow-none">
           <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <div className="flex min-w-0 items-center gap-3 lg:hidden">
               <AdminMobileSidebar
@@ -125,7 +127,11 @@ export function AdminShell({
               </div>
             </div>
 
-            <div className="grid w-full min-w-0 gap-2 min-[390px]:grid-cols-2 sm:w-72 sm:justify-self-end md:w-80 lg:ms-auto">
+            <div className="grid w-full min-w-0 gap-2 min-[390px]:grid-cols-2 sm:w-[28rem] sm:grid-cols-3 sm:justify-self-end lg:ms-auto">
+              <NotificationBell
+                labels={labels.notifications}
+                locale={locale}
+              />
               <LanguageToggle
                 currentLocale={locale}
                 labels={labels.language}

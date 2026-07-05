@@ -167,14 +167,24 @@ export type AdminEventTimelineQueryInput = z.infer<
   typeof adminEventTimelineQuerySchema
 >;
 
-export const employeeNotificationListQuerySchema = z.object({
+export const notificationListQuerySchema = z.object({
   page: paginationNumber(1, 10000),
   pageSize: paginationNumber(20, 100),
+  unread: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) =>
+      value === undefined ? undefined : value === "true",
+    ),
 });
 
-export type EmployeeNotificationListQueryInput = z.infer<
-  typeof employeeNotificationListQuerySchema
+export type NotificationListQueryInput = z.infer<
+  typeof notificationListQuerySchema
 >;
+
+export const employeeNotificationListQuerySchema = notificationListQuerySchema;
+
+export type EmployeeNotificationListQueryInput = NotificationListQueryInput;
 
 export const registerDeviceSchema = z.object({
   deviceId: z.string().trim().uuid(),

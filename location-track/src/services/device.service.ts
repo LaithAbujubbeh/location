@@ -1,6 +1,11 @@
 import { DeviceStatus, Prisma } from "@prisma/client";
 
 import type { AdminDeviceListQueryInput } from "../lib/validators.ts";
+import {
+  notifyAdminsOfPendingDevice,
+  notifyEmployeeDeviceApproved,
+  notifyEmployeeDeviceRejected,
+} from "./notification.service.ts";
 
 export class DeviceServiceError extends Error {
   readonly status: number;
@@ -220,6 +225,10 @@ export async function getOrCreateUserDevice({
         select: userDeviceSelect,
       });
 
+      if (!shouldTrustDevice) {
+        await notifyAdminsOfPendingDevice(tx, { now });
+      }
+
       return registrationResult(createdDevice, true, shouldTrustDevice);
     });
   } catch (error) {
@@ -286,6 +295,8 @@ export async function checkTrustedUserDeviceForAction(
         id: true,
       },
     });
+
+    await notifyAdminsOfPendingDevice(tx, { now });
 
     return {
       trusted: false,
@@ -420,17 +431,26 @@ export async function approveUserDevice({
   const now = new Date();
 
   try {
-    const device = await prisma.userDevice.update({
-      where: {
-        id: userDeviceId,
-      },
-      data: {
-        status: DeviceStatus.TRUSTED,
-        approvedAt: now,
-        rejectedAt: null,
-        reviewedByUserId,
-      },
-      select: userDeviceSelect,
+    const device = await prisma.$transaction(async (tx) => {
+      const updatedDevice = await tx.userDevice.update({
+        where: {
+          id: userDeviceId,
+        },
+        data: {
+          status: DeviceStatus.TRUSTED,
+          approvedAt: now,
+          rejectedAt: null,
+          reviewedByUserId,
+        },
+        select: userDeviceSelect,
+      });
+
+      await notifyEmployeeDeviceApproved(tx, {
+        userId: updatedDevice.userId,
+        now,
+      });
+
+      return updatedDevice;
     });
 
     return toDeviceRecord(device);
@@ -451,17 +471,26 @@ export async function rejectUserDevice({
   const now = new Date();
 
   try {
-    const device = await prisma.userDevice.update({
-      where: {
-        id: userDeviceId,
-      },
-      data: {
-        status: DeviceStatus.REJECTED,
-        approvedAt: null,
-        rejectedAt: now,
-        reviewedByUserId,
-      },
-      select: userDeviceSelect,
+    const device = await prisma.$transaction(async (tx) => {
+      const updatedDevice = await tx.userDevice.update({
+        where: {
+          id: userDeviceId,
+        },
+        data: {
+          status: DeviceStatus.REJECTED,
+          approvedAt: null,
+          rejectedAt: now,
+          reviewedByUserId,
+        },
+        select: userDeviceSelect,
+      });
+
+      await notifyEmployeeDeviceRejected(tx, {
+        userId: updatedDevice.userId,
+        now,
+      });
+
+      return updatedDevice;
     });
 
     return toDeviceRecord(device);

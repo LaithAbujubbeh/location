@@ -177,6 +177,14 @@ function createCheckInTx({
         };
       },
     },
+    user: {
+      findMany: async () => [],
+    },
+    notification: {
+      createMany: async () => ({
+        count: 0,
+      }),
+    },
     eventRecheck: {
       findMany: async () => [],
       createMany: async ({

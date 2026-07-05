@@ -5,6 +5,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { AdminProofLocationMap } from "@/components/admin/admin-proof-location-map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -166,11 +167,13 @@ function PhotoLink({
 }
 
 function ProofCard({
+  event,
   labels,
   locale,
   proof,
   statusLabels,
 }: {
+  event: AdminEventTimelineAssignmentEvent;
   labels: Messages["admin"]["timeline"];
   locale: Locale;
   proof: AdminProofTimelineRecord;
@@ -208,9 +211,37 @@ function ProofCard({
         <InfoItem label={labels.fields.reason} value={proof.reason ?? labels.none} />
         <InfoItem label={labels.fields.photoUrl} value={<PhotoLink labels={labels} photoUrl={proof.photoUrl} />} />
       </dl>
+      <div className="grid gap-2">
+        <p className="text-xs font-medium uppercase text-text-subtle">
+          {labels.fields.submittedLocation}
+        </p>
+        <AdminProofLocationMap
+          eventLatitude={event.latitude}
+          eventLongitude={event.longitude}
+          labels={labels.map}
+          proofAccuracyMeters={proof.accuracyMeters}
+          proofLatitude={proof.latitude}
+          proofLongitude={proof.longitude}
+          radiusMeters={event.radiusMeters}
+        />
+        <div className="grid gap-2 text-xs leading-5 text-text-muted min-[390px]:grid-cols-2">
+          <span className="min-w-0 break-words">
+            {labels.map.eventMarker}
+          </span>
+          <span className="min-w-0 break-words">
+            {labels.map.proofMarker}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
+
+type AdminEventTimelineAssignmentEvent = {
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+};
 
 function RecheckCard({
   labels,
@@ -260,12 +291,14 @@ function RecheckCard({
 
 function AssignmentTimeline({
   assignment,
+  event,
   labels,
   locale,
   proofTypeFilter,
   statusLabels,
 }: {
   assignment: AdminEventTimelineAssignment;
+  event: AdminEventTimelineAssignmentEvent;
   labels: Messages["admin"]["timeline"];
   locale: Locale;
   proofTypeFilter: ProofType | "";
@@ -337,6 +370,7 @@ function AssignmentTimeline({
             </h3>
             {proofs.map((proof) => (
               <ProofCard
+                event={event}
                 key={proof.id}
                 labels={labels}
                 locale={locale}
@@ -584,6 +618,11 @@ export function AdminEventTimelineClient({
           {visibleAssignments.map((assignment) => (
             <AssignmentTimeline
               assignment={assignment}
+              event={{
+                latitude: event.latitude,
+                longitude: event.longitude,
+                radiusMeters: event.radiusMeters,
+              }}
               key={assignment.assignmentId}
               labels={labels}
               locale={locale}

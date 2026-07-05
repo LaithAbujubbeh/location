@@ -187,5 +187,6 @@ test("mutation invalidation plan covers required private refreshes", () => {
   ]);
   assert.deepEqual(mutationInvalidationPlan.employeeReadNotification, [
     "employee.notifications.list",
+    "notifications.list",
   ]);
 });

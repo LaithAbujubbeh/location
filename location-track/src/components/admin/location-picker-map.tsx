@@ -13,6 +13,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
+import { LeafletMapSizeSync } from "@/components/admin/leaflet-map-size-sync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -84,6 +85,7 @@ function MapCenterSync({
   useEffect(() => {
     if (latitude !== null && longitude !== null) {
       map.setView([latitude, longitude], Math.max(map.getZoom(), DEFAULT_ZOOM));
+      map.invalidateSize({ animate: false });
     }
   }, [latitude, longitude, map]);
 
@@ -262,6 +264,7 @@ export function LocationPickerMap({
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          <LeafletMapSizeSync />
           <MapClickHandler onLocationChange={onLocationChange} />
           <MapCenterSync latitude={latitude} longitude={longitude} />
           {selectedCenter ? (

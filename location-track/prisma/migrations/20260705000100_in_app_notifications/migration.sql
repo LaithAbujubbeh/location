@@ -1,0 +1,7 @@
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'DEVICE';
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'ATTENDANCE_REVIEW';
+
+ALTER TABLE "Notification"
+  ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+CREATE INDEX "Notification_type_idx" ON "Notification"("type");

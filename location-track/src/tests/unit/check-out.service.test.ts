@@ -157,6 +157,14 @@ function createCheckOutTx({
         };
       },
     },
+    user: {
+      findMany: async () => [],
+    },
+    notification: {
+      createMany: async () => ({
+        count: 0,
+      }),
+    },
   };
 
   return {

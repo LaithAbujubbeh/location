@@ -8,6 +8,7 @@ import {
   hashRecheckToken,
 } from "./recheck.service.ts";
 import { sendRecheckNotification } from "./notification.service.ts";
+import { notifyEmployeeMissedRecheck } from "./notification.service.ts";
 
 export type ProcessRechecksSummary = {
   activatedCount: number;
@@ -134,6 +135,7 @@ export async function processScheduledRechecksInTransaction(
           event: {
             select: {
               title: true,
+              id: true,
               locationName: true,
             },
           },
@@ -177,6 +179,7 @@ export async function processScheduledRechecksInTransaction(
     const notificationResult = await sendRecheckNotification({
       tx,
       userId: recheck.employeeId,
+      eventId: recheck.assignment.event.id,
       eventName: recheck.assignment.event.title,
       locationName: recheck.assignment.event.locationName,
       expiresAt: recheck.expiresAt,
@@ -209,6 +212,12 @@ export async function processScheduledRechecksInTransaction(
     select: {
       id: true,
       assignmentId: true,
+      employeeId: true,
+      assignment: {
+        select: {
+          eventId: true,
+        },
+      },
     },
   });
   const missedAssignmentIds: string[] = [];
@@ -233,6 +242,12 @@ export async function processScheduledRechecksInTransaction(
 
     if (updateResult.count === 1) {
       summary.missedCount += 1;
+      await notifyEmployeeMissedRecheck(tx, {
+        userId: recheck.employeeId,
+        eventId: recheck.assignment.eventId,
+        now,
+      });
+      summary.notifications.inAppCreatedCount += 1;
       missedAssignmentIds.push(recheck.assignmentId);
     }
   }

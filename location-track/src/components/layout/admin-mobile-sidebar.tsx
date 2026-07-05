@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { LogoutButton } from "@/components/auth/logout-button";
 import { Button } from "@/components/ui/button";
@@ -71,55 +72,29 @@ export function AdminMobileSidebar({
     };
   }, [isOpen]);
 
-  return (
-    <>
-      <Button
-        aria-expanded={isOpen}
-        aria-label={isOpen ? labels.closeMenu : labels.openMenu}
-        className="h-10 w-10 p-0 lg:hidden"
-        onClick={() => setIsOpen((current) => !current)}
-        type="button"
-        variant="outline"
-      >
-        <span className="relative h-5 w-5" aria-hidden="true">
-          <span
-            className={cn(
-              "absolute start-0 top-0 h-0.5 w-5 rounded-full bg-current transition-transform duration-200 ease-out",
-              isOpen && "translate-y-2 rotate-45",
-            )}
-          />
-          <span
-            className={cn(
-              "absolute start-0 top-2 h-0.5 w-5 rounded-full bg-current transition-opacity duration-150 ease-out",
-              isOpen && "opacity-0",
-            )}
-          />
-          <span
-            className={cn(
-              "absolute start-0 top-4 h-0.5 w-5 rounded-full bg-current transition-transform duration-200 ease-out",
-              isOpen && "-translate-y-2 -rotate-45",
-            )}
-          />
-        </span>
-      </Button>
-
+  const sidebarOverlay =
+    typeof document !== "undefined"
+      ? createPortal(
+          <>
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-foreground/30 opacity-0 transition-opacity duration-200 ease-out lg:hidden",
+          "fixed inset-0 bg-foreground/15 opacity-0 transition-opacity duration-200 ease-out lg:hidden",
           isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none",
         )}
-        onClick={() => setIsOpen(false)}
+        onPointerDown={() => setIsOpen(false)}
+        style={{ zIndex: 2_000 }}
       />
 
       <aside
         className={cn(
-          "fixed inset-y-0 start-0 z-50 flex h-dvh w-[86vw] max-w-80 flex-col border-e border-border bg-surface-elevated shadow-[var(--shadow-md)] transition-transform duration-200 ease-out sm:w-80 lg:hidden",
+          "fixed inset-y-0 start-0 flex h-dvh w-[86vw] max-w-80 flex-col border-e border-border bg-surface-elevated shadow-[var(--shadow-md)] transition-transform duration-200 ease-out sm:w-80 lg:hidden",
           isOpen
             ? "translate-x-0"
             : isRtl
               ? "translate-x-full"
               : "-translate-x-full",
         )}
+        style={{ zIndex: 2_010 }}
       >
         <div className="flex items-start justify-between gap-3 border-b border-border p-4 sm:p-5">
           <Link className="grid min-w-0 gap-1" href={eventsHref}>
@@ -179,6 +154,43 @@ export function AdminMobileSidebar({
           <LogoutButton label={labels.logout} locale={locale} />
         </div>
       </aside>
+          </>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <>
+      <Button
+        aria-expanded={isOpen}
+        aria-label={isOpen ? labels.closeMenu : labels.openMenu}
+        className="h-10 w-10 p-0 lg:hidden"
+        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+        variant="outline"
+      >
+        <span className="relative h-5 w-5" aria-hidden="true">
+          <span
+            className={cn(
+              "absolute start-0 top-0 h-0.5 w-5 rounded-full bg-current transition-transform duration-200 ease-out",
+              isOpen && "translate-y-2 rotate-45",
+            )}
+          />
+          <span
+            className={cn(
+              "absolute start-0 top-2 h-0.5 w-5 rounded-full bg-current transition-opacity duration-150 ease-out",
+              isOpen && "opacity-0",
+            )}
+          />
+          <span
+            className={cn(
+              "absolute start-0 top-4 h-0.5 w-5 rounded-full bg-current transition-transform duration-200 ease-out",
+              isOpen && "-translate-y-2 -rotate-45",
+            )}
+          />
+        </span>
+      </Button>
+      {sidebarOverlay}
     </>
   );
 }

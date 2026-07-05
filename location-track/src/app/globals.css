@@ -124,13 +124,22 @@ body {
   outline-offset: 2px;
 }
 
+.location-picker-map {
+  direction: ltr;
+}
+
 .location-picker-map .leaflet-container {
   position: relative;
   width: 100%;
   min-height: 300px;
   overflow: hidden;
   background: var(--surface-subtle);
+  direction: ltr !important;
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.location-picker-map .leaflet-container * {
+  direction: ltr;
 }
 
 .location-picker-map .leaflet-pane,
@@ -145,7 +154,10 @@ body {
 .location-picker-map .leaflet-image-layer,
 .location-picker-map .leaflet-layer {
   position: absolute;
-  inset-inline-start: 0;
+  inset-inline-start: auto;
+  inset-inline-end: auto;
+  left: 0 !important;
+  right: auto !important;
   top: 0;
 }
 
@@ -171,6 +183,7 @@ body {
 .location-picker-map .leaflet-control-container {
   position: relative;
   z-index: 800;
+  direction: ltr !important;
 }
 
 .location-picker-map .leaflet-control-attribution,
@@ -195,6 +208,21 @@ body {
   border: 3px solid var(--surface-elevated);
   border-radius: 999px;
   background: var(--primary);
+  box-shadow: 0 8px 20px rgb(15 23 42 / 0.28);
+}
+
+.attendance-proof-marker {
+  background: transparent;
+  border: 0;
+}
+
+.attendance-proof-marker-dot {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--surface-elevated);
+  border-radius: 999px;
+  background: var(--warning);
   box-shadow: 0 8px 20px rgb(15 23 42 / 0.28);
 }
 

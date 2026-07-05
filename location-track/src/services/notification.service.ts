@@ -2,11 +2,12 @@ import {
   NotificationChannel,
   NotificationType,
   Prisma,
+  UserRole,
 } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 
 import type { AuthenticatedSession } from "../lib/permissions.ts";
-import type { EmployeeNotificationListQueryInput } from "../lib/validators.ts";
+import type { NotificationListQueryInput } from "../lib/validators.ts";
 
 export const NOTIFICATION_CHANNELS = {
   IN_APP: NotificationChannel.IN_APP,
@@ -28,6 +29,7 @@ type NotificationClient = Prisma.TransactionClient | PrismaClient;
 
 export type RecheckNotificationInput = {
   userId: string;
+  eventId: string;
   eventName: string;
   locationName: string | null;
   expiresAt: Date;
@@ -40,6 +42,15 @@ export type RecheckNotificationResult = {
 
 type SendRecheckNotificationArgs = RecheckNotificationInput & {
   tx: Prisma.TransactionClient;
+};
+
+type CreateNotificationInput = {
+  userId: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  link?: string | null;
+  now?: Date;
 };
 
 const notificationSelect = {
@@ -70,8 +81,9 @@ export type NotificationRecord = {
   createdAt: string;
 };
 
-export type EmployeeNotificationListResult = {
+export type NotificationListResult = {
   items: NotificationRecord[];
+  unreadCount: number;
   pagination: {
     page: number;
     pageSize: number;
@@ -81,6 +93,8 @@ export type EmployeeNotificationListResult = {
     hasPreviousPage: boolean;
   };
 };
+
+export type EmployeeNotificationListResult = NotificationListResult;
 
 function toNotificationRecord(
   notification: SelectedNotification,
@@ -102,7 +116,7 @@ function formatDateForMessage(date: Date) {
   return date.toISOString();
 }
 
-function stripEmailHeaderControls(value: string) {
+function stripHeaderControls(value: string) {
   return value.replace(/[\r\n]+/g, " ").trim();
 }
 
@@ -114,32 +128,30 @@ function buildRecheckNotificationContent({
   RecheckNotificationInput,
   "eventName" | "locationName" | "expiresAt"
 >) {
-  const locationText = locationName ? ` at ${locationName}` : "";
+  const safeEventName = stripHeaderControls(eventName);
+  const safeLocationName = locationName ? stripHeaderControls(locationName) : "";
+  const locationText = safeLocationName ? ` at ${safeLocationName}` : "";
   const expiresAtText = formatDateForMessage(expiresAt);
-  const title = stripEmailHeaderControls(`Recheck required for ${eventName}`);
-  const message = `Please confirm you are still at ${eventName}${locationText} before ${expiresAtText}.`;
 
   return {
-    title,
-    message,
+    title: `Recheck required for ${safeEventName}`,
+    message: `Please confirm you are still at ${safeEventName}${locationText} before ${expiresAtText}.`,
   };
 }
 
-async function createInAppNotification(
-  tx: Prisma.TransactionClient,
-  input: RecheckNotificationInput,
+export async function createInAppNotificationWithClient(
+  client: NotificationClient,
+  input: CreateNotificationInput,
 ) {
-  const content = buildRecheckNotificationContent(input);
-
-  await tx.notification.create({
+  return client.notification.create({
     data: {
       userId: input.userId,
-      title: content.title,
-      message: content.message,
-      type: NotificationType.RECHECK,
+      title: stripHeaderControls(input.title),
+      message: stripHeaderControls(input.message),
+      type: input.type,
       channel: NotificationChannel.IN_APP,
-      link: null,
-      createdAt: input.now,
+      link: input.link ?? null,
+      ...(input.now ? { createdAt: input.now } : {}),
     },
     select: {
       id: true,
@@ -147,45 +159,188 @@ async function createInAppNotification(
   });
 }
 
+export async function createInAppNotification(input: CreateNotificationInput) {
+  const { prisma } = await import("../lib/prisma.ts");
+
+  return createInAppNotificationWithClient(prisma, input);
+}
+
 export async function sendRecheckNotification({
   tx,
   ...input
 }: SendRecheckNotificationArgs): Promise<RecheckNotificationResult> {
-  await createInAppNotification(tx, input);
+  const content = buildRecheckNotificationContent(input);
+
+  await createInAppNotificationWithClient(tx, {
+    userId: input.userId,
+    title: content.title,
+    message: content.message,
+    type: NotificationType.RECHECK,
+    link: `/employee/events/${input.eventId}/recheck`,
+    now: input.now,
+  });
 
   return {
     inAppCreated: true,
   };
 }
 
-export async function listNotificationsForEmployee({
+export async function notifyAdminsOfPendingDevice(
+  client: NotificationClient,
+  { now = new Date() }: { now?: Date } = {},
+) {
+  const admins = await client.user.findMany({
+    where: {
+      role: UserRole.ADMIN,
+      isActive: true,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (admins.length === 0) {
+    return 0;
+  }
+
+  await client.notification.createMany({
+    data: admins.map((admin) => ({
+      userId: admin.id,
+      title: "New device needs approval",
+      message: "Review the pending device request in the admin devices page.",
+      type: NotificationType.DEVICE,
+      channel: NotificationChannel.IN_APP,
+      link: "/admin/devices",
+      createdAt: now,
+    })),
+  });
+
+  return admins.length;
+}
+
+export async function notifyEmployeeDeviceApproved(
+  client: NotificationClient,
+  { userId, now = new Date() }: { userId: string; now?: Date },
+) {
+  await createInAppNotificationWithClient(client, {
+    userId,
+    title: "Your device was approved",
+    message: "You can now use this device for attendance actions.",
+    type: NotificationType.DEVICE,
+    link: "/employee/events",
+    now,
+  });
+}
+
+export async function notifyEmployeeDeviceRejected(
+  client: NotificationClient,
+  { userId, now = new Date() }: { userId: string; now?: Date },
+) {
+  await createInAppNotificationWithClient(client, {
+    userId,
+    title: "Your device was rejected",
+    message: "Use an approved device or contact an administrator.",
+    type: NotificationType.DEVICE,
+    link: "/employee/events",
+    now,
+  });
+}
+
+export async function notifyEmployeeMissedRecheck(
+  client: NotificationClient,
+  {
+    eventId,
+    userId,
+    now = new Date(),
+  }: {
+    eventId: string;
+    userId: string;
+    now?: Date;
+  },
+) {
+  await createInAppNotificationWithClient(client, {
+    userId,
+    title: "You missed a recheck",
+    message: "A scheduled recheck expired before it was submitted.",
+    type: NotificationType.RECHECK,
+    link: `/employee/events/${eventId}`,
+    now,
+  });
+}
+
+export async function notifyAdminsOfSuspiciousProof(
+  client: NotificationClient,
+  {
+    eventId,
+    now = new Date(),
+  }: {
+    eventId: string;
+    now?: Date;
+  },
+) {
+  const admins = await client.user.findMany({
+    where: {
+      role: UserRole.ADMIN,
+      isActive: true,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (admins.length === 0) {
+    return 0;
+  }
+
+  await client.notification.createMany({
+    data: admins.map((admin) => ({
+      userId: admin.id,
+      title: "Suspicious attendance proof needs review",
+      message: "Review the attendance timeline for the related event.",
+      type: NotificationType.ATTENDANCE_REVIEW,
+      channel: NotificationChannel.IN_APP,
+      link: `/admin/events/${eventId}/timeline`,
+      createdAt: now,
+    })),
+  });
+
+  return admins.length;
+}
+
+export async function listNotificationsForUser({
   userId,
   query,
 }: {
   userId: string;
-  query: EmployeeNotificationListQueryInput;
+  query: NotificationListQueryInput;
 }) {
   const { prisma } = await import("../lib/prisma.ts");
 
-  return listNotificationsForEmployeeWithClient(prisma, { userId, query });
+  return listNotificationsForUserWithClient(prisma, { userId, query });
 }
 
-export async function listNotificationsForEmployeeWithClient(
+export async function listNotificationsForUserWithClient(
   client: NotificationClient,
   {
     userId,
     query,
   }: {
     userId: string;
-    query: EmployeeNotificationListQueryInput;
+    query: NotificationListQueryInput;
   },
-): Promise<EmployeeNotificationListResult> {
+): Promise<NotificationListResult> {
   const where: Prisma.NotificationWhereInput = {
     userId,
+    ...(query.unread === true ? { readAt: null } : {}),
+  };
+  const unreadWhere: Prisma.NotificationWhereInput = {
+    userId,
+    readAt: null,
   };
   const skip = (query.page - 1) * query.pageSize;
-  const [total, notifications] = await client.$transaction([
+  const [total, unreadCount, notifications] = await client.$transaction([
     client.notification.count({ where }),
+    client.notification.count({ where: unreadWhere }),
     client.notification.findMany({
       where,
       orderBy: [
@@ -205,6 +360,7 @@ export async function listNotificationsForEmployeeWithClient(
 
   return {
     items: notifications.map(toNotificationRecord),
+    unreadCount,
     pagination: {
       page: query.page,
       pageSize: query.pageSize,
@@ -216,7 +372,27 @@ export async function listNotificationsForEmployeeWithClient(
   };
 }
 
-export async function markNotificationReadForEmployee({
+export async function listNotificationsForEmployee({
+  userId,
+  query,
+}: {
+  userId: string;
+  query: NotificationListQueryInput;
+}) {
+  return listNotificationsForUser({ userId, query });
+}
+
+export async function listNotificationsForEmployeeWithClient(
+  client: NotificationClient,
+  input: {
+    userId: string;
+    query: NotificationListQueryInput;
+  },
+) {
+  return listNotificationsForUserWithClient(client, input);
+}
+
+export async function markNotificationReadForUser({
   userId,
   notificationId,
   now = new Date(),
@@ -227,14 +403,14 @@ export async function markNotificationReadForEmployee({
 }) {
   const { prisma } = await import("../lib/prisma.ts");
 
-  return markNotificationReadForEmployeeWithClient(prisma, {
+  return markNotificationReadForUserWithClient(prisma, {
     userId,
     notificationId,
     now,
   });
 }
 
-export async function markNotificationReadForEmployeeWithClient(
+export async function markNotificationReadForUserWithClient(
   client: NotificationClient,
   {
     userId,
@@ -246,7 +422,7 @@ export async function markNotificationReadForEmployeeWithClient(
     now: Date;
   },
 ): Promise<NotificationRecord> {
-  const updateResult = await client.notification.updateMany({
+  await client.notification.updateMany({
     where: {
       id: notificationId,
       userId,
@@ -273,15 +449,119 @@ export async function markNotificationReadForEmployeeWithClient(
     );
   }
 
-  if (updateResult.count === 0 && !notification.readAt) {
+  return toNotificationRecord(notification);
+}
+
+export async function markNotificationReadForEmployee(input: {
+  userId: string;
+  notificationId: string;
+  now?: Date;
+}) {
+  return markNotificationReadForUser(input);
+}
+
+export async function markNotificationReadForEmployeeWithClient(
+  client: NotificationClient,
+  input: {
+    userId: string;
+    notificationId: string;
+    now: Date;
+  },
+) {
+  return markNotificationReadForUserWithClient(client, input);
+}
+
+export async function markAllNotificationsReadForUser({
+  userId,
+  now = new Date(),
+}: {
+  userId: string;
+  now?: Date;
+}) {
+  const { prisma } = await import("../lib/prisma.ts");
+  const result = await prisma.notification.updateMany({
+    where: {
+      userId,
+      readAt: null,
+    },
+    data: {
+      readAt: now,
+    },
+  });
+
+  return {
+    updatedCount: result.count,
+  };
+}
+
+export async function deleteNotificationForUser({
+  userId,
+  notificationId,
+}: {
+  userId: string;
+  notificationId: string;
+}) {
+  const { prisma } = await import("../lib/prisma.ts");
+
+  return deleteNotificationForUserWithClient(prisma, {
+    userId,
+    notificationId,
+  });
+}
+
+export async function deleteNotificationForUserWithClient(
+  client: NotificationClient,
+  {
+    userId,
+    notificationId,
+  }: {
+    userId: string;
+    notificationId: string;
+  },
+) {
+  const result = await client.notification.deleteMany({
+    where: {
+      id: notificationId,
+      userId,
+    },
+  });
+
+  if (result.count !== 1) {
     throw new NotificationServiceError(
-      409,
-      "NOTIFICATION_NOT_READ",
-      "Notification could not be marked as read.",
+      404,
+      "NOTIFICATION_NOT_FOUND",
+      "Notification was not found.",
     );
   }
 
-  return toNotificationRecord(notification);
+  return {
+    deleted: true as const,
+  };
+}
+
+export async function deleteAllNotificationsForUser({
+  userId,
+}: {
+  userId: string;
+}) {
+  const { prisma } = await import("../lib/prisma.ts");
+
+  return deleteAllNotificationsForUserWithClient(prisma, { userId });
+}
+
+export async function deleteAllNotificationsForUserWithClient(
+  client: NotificationClient,
+  { userId }: { userId: string },
+) {
+  const result = await client.notification.deleteMany({
+    where: {
+      userId,
+    },
+  });
+
+  return {
+    deletedCount: result.count,
+  };
 }
 
 export function getEmployeeIdFromSession(session: AuthenticatedSession) {
