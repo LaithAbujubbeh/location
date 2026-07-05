@@ -222,6 +222,72 @@
       "actions": {
         "backToEvents": "العودة إلى الفعاليات",
         "refresh": "تحديث",
+        "retry": "حاول مرة أخرى",
+        "viewTimeline": "عرض السجل الزمني"
+      }
+    },
+    "timeline": {
+      "title": "السجل الزمني للفعالية",
+      "description": "راجع إثباتات تسجيل الحضور وإعادة التحقق وتسجيل الخروج لهذه الفعالية.",
+      "errorTitle": "تعذر تحميل السجل الزمني",
+      "errorDescription": "حدّث الصفحة أو عد إلى تفاصيل الفعالية.",
+      "emptyTitle": "لا توجد سجلات زمنية للعرض",
+      "emptyDescription": "ستظهر الإثباتات وسجلات إعادة التحقق المطابقة للفلاتر الحالية هنا.",
+      "emptyRecordsTitle": "لا توجد سجلات لهذا الموظف",
+      "none": "لا يوجد",
+      "notSubmitted": "لم يتم الإرسال بعد",
+      "meters": "{value} متر",
+      "recheckRecordTitle": "سجل إعادة تحقق",
+      "sections": {
+        "filtersDescription": "صفّ السجل المحمل حسب الموظف أو حالة التعيين أو نوع الإثبات.",
+        "filtersTitle": "الفلاتر",
+        "proofsTitle": "الإثباتات",
+        "rechecksTitle": "سجلات إعادة التحقق"
+      },
+      "stats": {
+        "checkIns": "تسجيلات الحضور",
+        "checkOuts": "تسجيلات الخروج",
+        "missedRechecks": "إعادات تحقق فائتة",
+        "recheckProofs": "إثباتات إعادة التحقق",
+        "suspiciousProofs": "إثباتات مريبة"
+      },
+      "fields": {
+        "assignmentCount": "التعيينات",
+        "checkedInAt": "وقت الحضور",
+        "checkedOutAt": "وقت الخروج",
+        "createdAt": "تاريخ الإنشاء",
+        "distanceMeters": "المسافة",
+        "expiresAt": "ينتهي في",
+        "gpsAccuracy": "دقة GPS",
+        "gpsTimestamp": "وقت GPS",
+        "notificationSentAt": "تم إرسال الإشعار",
+        "photoUrl": "رابط الصورة",
+        "proofCount": "الإثباتات",
+        "radius": "النطاق",
+        "reason": "السبب",
+        "recheckCount": "إعادات التحقق",
+        "startsAt": "يبدأ في",
+        "submittedAt": "تم الإرسال",
+        "timeWindow": "الوقت"
+      },
+      "filters": {
+        "allProofTypes": "كل أنواع الإثبات",
+        "allStatuses": "كل الحالات",
+        "employeeSearchPlaceholder": "ابحث باسم الموظف أو بريده أو معرفه"
+      },
+      "proofTypes": {
+        "CHECK_IN": "تسجيل الحضور",
+        "CHECK_OUT": "تسجيل الخروج",
+        "RECHECK": "إعادة التحقق"
+      },
+      "pagination": {
+        "next": "التالي",
+        "previous": "السابق",
+        "summary": "الصفحة {page} من {totalPages}، {total} تعيين"
+      },
+      "actions": {
+        "backToDetails": "العودة إلى تفاصيل الفعالية",
+        "refresh": "تحديث",
         "retry": "حاول مرة أخرى"
       }
     }

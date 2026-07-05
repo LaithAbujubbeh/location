@@ -665,6 +665,12 @@ export function AdminEventDetailClient({
 
       <div className="grid gap-2 sm:flex sm:justify-start">
         <Link
+          className="inline-flex min-h-11 w-full min-w-0 items-center justify-center rounded-md bg-primary px-4 py-2 text-center text-sm font-medium leading-tight text-on-primary shadow-[var(--shadow-sm)] transition-colors hover:bg-primary-hover sm:w-auto"
+          href={`/${locale}/admin/events/${eventId}/timeline`}
+        >
+          {labels.actions.viewTimeline}
+        </Link>
+        <Link
           className="inline-flex min-h-11 w-full min-w-0 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-center text-sm font-medium leading-tight text-foreground shadow-[var(--shadow-sm)] transition-colors hover:bg-surface-subtle sm:w-auto"
           href={`/${locale}/admin/events`}
         >

@@ -76,3 +76,23 @@ Last updated: 2026-07-05
 
 **Pattern notes:**
 Admin detail pages compose compact dashboard cards with `dl` info grids so localized labels and coordinates wrap without overflow. Employee status uses mobile cards below `lg` and a contained desktop table with `min-w` inside `overflow-x-auto`. The location map is read-only, client-only, and visually matches the editable map without search/current-location controls.
+
+### Admin Timeline
+
+File: src/components/admin/admin-event-timeline-client.tsx
+Last updated: 2026-07-05
+
+| Property         | Class           |
+| ---------------- | --------------- |
+| Background       | `bg-surface-elevated`, `bg-surface`, `bg-surface-subtle` |
+| Border           | `border border-border`, `border-border-strong`, tone borders such as `border-danger/25` |
+| Border radius    | `rounded-lg` for employee timeline cards, `rounded-md` for proof/recheck records, filters, and notices |
+| Text primary     | `text-foreground`, `text-primary`, `text-on-primary` |
+| Text secondary   | `text-text-muted`, `text-text-subtle` |
+| Spacing          | `gap-4`, `gap-3`, card `p-4 sm:p-5`, record padding `px-3 py-3` |
+| Hover state      | `hover:bg-surface-subtle`, `hover:bg-primary-hover`, `hover:text-primary-hover` |
+| Shadow           | `shadow-[var(--shadow-sm)]` |
+| Accent usage     | Proof and recheck status badges use semantic tones; photo links use `text-primary` |
+
+**Pattern notes:**
+Admin timeline pages group private proof and recheck records by employee in stacked cards instead of dense tables. Each proof/recheck record uses the same compact `dl` info grid as event details, so GPS values, reasons, and photo URLs wrap safely on mobile and in RTL layouts. Filters stack on mobile and expand into one row on desktop without replacing the entire page during refetches.

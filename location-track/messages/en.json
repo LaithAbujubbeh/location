@@ -222,6 +222,72 @@
       "actions": {
         "backToEvents": "Back to events",
         "refresh": "Refresh",
+        "retry": "Try again",
+        "viewTimeline": "View timeline"
+      }
+    },
+    "timeline": {
+      "title": "Event timeline",
+      "description": "Review check-in, recheck, and checkout proofs for this event.",
+      "errorTitle": "Timeline could not be loaded",
+      "errorDescription": "Refresh the page or return to event details.",
+      "emptyTitle": "No timeline records to display",
+      "emptyDescription": "Proofs and recheck records matching the current filters will appear here.",
+      "emptyRecordsTitle": "No records for this employee",
+      "none": "None",
+      "notSubmitted": "Not submitted yet",
+      "meters": "{value} meters",
+      "recheckRecordTitle": "Recheck record",
+      "sections": {
+        "filtersDescription": "Filter the loaded timeline by employee, assignment status, or proof type.",
+        "filtersTitle": "Filters",
+        "proofsTitle": "Proofs",
+        "rechecksTitle": "Recheck records"
+      },
+      "stats": {
+        "checkIns": "Check-ins",
+        "checkOuts": "Checkouts",
+        "missedRechecks": "Missed rechecks",
+        "recheckProofs": "Recheck proofs",
+        "suspiciousProofs": "Suspicious proofs"
+      },
+      "fields": {
+        "assignmentCount": "Assignments",
+        "checkedInAt": "Checked in",
+        "checkedOutAt": "Checked out",
+        "createdAt": "Created",
+        "distanceMeters": "Distance",
+        "expiresAt": "Expires at",
+        "gpsAccuracy": "GPS accuracy",
+        "gpsTimestamp": "GPS time",
+        "notificationSentAt": "Notification sent",
+        "photoUrl": "Photo URL",
+        "proofCount": "Proofs",
+        "radius": "Radius",
+        "reason": "Reason",
+        "recheckCount": "Rechecks",
+        "startsAt": "Starts at",
+        "submittedAt": "Submitted",
+        "timeWindow": "Time"
+      },
+      "filters": {
+        "allProofTypes": "All proof types",
+        "allStatuses": "All statuses",
+        "employeeSearchPlaceholder": "Search employee name, email, or ID"
+      },
+      "proofTypes": {
+        "CHECK_IN": "Check-in",
+        "CHECK_OUT": "Checkout",
+        "RECHECK": "Recheck"
+      },
+      "pagination": {
+        "next": "Next",
+        "previous": "Previous",
+        "summary": "Page {page} of {totalPages}, {total} assignments"
+      },
+      "actions": {
+        "backToDetails": "Back to event details",
+        "refresh": "Refresh",
         "retry": "Try again"
       }
     }
