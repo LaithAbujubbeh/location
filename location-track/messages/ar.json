@@ -39,6 +39,7 @@
       "openMenu": "فتح قائمة المدير"
     },
     "nav": {
+      "devices": "الأجهزة",
       "events": "الفعاليات"
     },
     "events": {
@@ -70,6 +71,45 @@
         "next": "التالي",
         "previous": "السابق",
         "summary": "الصفحة {page} من {totalPages}، {total} فعالية"
+      }
+    },
+    "devices": {
+      "title": "الأجهزة",
+      "description": "راجع أجهزة الموظفين ووافق على طلبات الأجهزة أو ارفضها.",
+      "cardTitle": "أجهزة الموظفين",
+      "cardDescription": "إدارة الأجهزة قيد الانتظار والموثوقة والمرفوضة.",
+      "emptyTitle": "لا توجد أجهزة للعرض",
+      "emptyDescription": "ستظهر هنا طلبات الأجهزة المطابقة للفلتر الحالي.",
+      "errorTitle": "تعذر تحميل الأجهزة",
+      "errorDescription": "حدّث القائمة أو حاول مرة أخرى بعد قليل.",
+      "unknownUser": "مستخدم غير معروف",
+      "none": "لا يوجد",
+      "fields": {
+        "actions": "الإجراءات",
+        "approvedAt": "وقت الموافقة",
+        "createdAt": "تاريخ الإنشاء",
+        "deviceId": "معرف الجهاز",
+        "employee": "الموظف",
+        "rejectedAt": "وقت الرفض",
+        "status": "الحالة",
+        "userAgent": "بيانات المتصفح"
+      },
+      "filters": {
+        "allStatuses": "كل الحالات"
+      },
+      "actions": {
+        "approve": "موافقة",
+        "refresh": "تحديث",
+        "reject": "رفض",
+        "retry": "حاول مرة أخرى"
+      },
+      "errors": {
+        "reviewFailed": "تعذرت مراجعة الجهاز. حاول مرة أخرى."
+      },
+      "pagination": {
+        "next": "التالي",
+        "previous": "السابق",
+        "summary": "الصفحة {page} من {totalPages}، {total} جهاز"
       }
     },
     "createEvent": {
@@ -686,6 +726,7 @@
     "passed": "تم بنجاح",
     "expired": "منتهي",
     "accepted": "مقبول",
-    "rejected": "مرفوض"
+    "rejected": "مرفوض",
+    "trusted": "موثوق"
   }
 }

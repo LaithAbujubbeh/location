@@ -39,6 +39,7 @@
       "openMenu": "Open admin menu"
     },
     "nav": {
+      "devices": "Devices",
       "events": "Events"
     },
     "events": {
@@ -70,6 +71,45 @@
         "next": "Next",
         "previous": "Previous",
         "summary": "Page {page} of {totalPages}, {total} events"
+      }
+    },
+    "devices": {
+      "title": "Devices",
+      "description": "Review employee devices and approve or reject device requests.",
+      "cardTitle": "Employee devices",
+      "cardDescription": "Manage pending, trusted, and rejected devices.",
+      "emptyTitle": "No devices to display",
+      "emptyDescription": "Device requests matching the current filter will appear here.",
+      "errorTitle": "Devices could not be loaded",
+      "errorDescription": "Refresh the list or try again in a moment.",
+      "unknownUser": "Unknown user",
+      "none": "None",
+      "fields": {
+        "actions": "Actions",
+        "approvedAt": "Approved",
+        "createdAt": "Created",
+        "deviceId": "Device ID",
+        "employee": "Employee",
+        "rejectedAt": "Rejected",
+        "status": "Status",
+        "userAgent": "User agent"
+      },
+      "filters": {
+        "allStatuses": "All statuses"
+      },
+      "actions": {
+        "approve": "Approve",
+        "refresh": "Refresh",
+        "reject": "Reject",
+        "retry": "Try again"
+      },
+      "errors": {
+        "reviewFailed": "Device review failed. Try again."
+      },
+      "pagination": {
+        "next": "Next",
+        "previous": "Previous",
+        "summary": "Page {page} of {totalPages}, {total} devices"
       }
     },
     "createEvent": {
@@ -686,6 +726,7 @@
     "passed": "Passed",
     "expired": "Expired",
     "accepted": "Accepted",
-    "rejected": "Rejected"
+    "rejected": "Rejected",
+    "trusted": "Trusted"
   }
 }

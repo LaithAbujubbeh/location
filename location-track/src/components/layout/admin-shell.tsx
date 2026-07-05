@@ -14,6 +14,7 @@ type AdminShellLabels = {
   signedInAs: string;
   logout: string;
   nav: {
+    devices: string;
     events: string;
   };
   language: {
@@ -45,8 +46,11 @@ export function AdminShell({
   locale,
   user,
 }: AdminShellProps) {
+  const devicesHref = `/${locale}/admin/devices`;
   const eventsHref = `/${locale}/admin/events`;
   const displayName = user.name || user.email;
+  const navLinkClass =
+    "rounded-md px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-subtle hover:text-foreground";
 
   return (
     <div className="min-h-dvh overflow-x-clip bg-background text-foreground lg:flex">
@@ -61,12 +65,11 @@ export function AdminShell({
         </div>
 
         <nav className="grid gap-1 p-3" aria-label={labels.areaLabel}>
-          <Link
-            aria-current="page"
-            className="rounded-md bg-primary-soft px-3 py-2 text-sm font-medium text-primary-dark dark:bg-surface-muted dark:text-foreground"
-            href={eventsHref}
-          >
+          <Link className={navLinkClass} href={eventsHref}>
             {labels.nav.events}
+          </Link>
+          <Link className={navLinkClass} href={devicesHref}>
+            {labels.nav.devices}
           </Link>
         </nav>
 
@@ -89,6 +92,7 @@ export function AdminShell({
           <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <div className="flex min-w-0 items-center gap-3 lg:hidden">
               <AdminMobileSidebar
+                devicesHref={devicesHref}
                 eventsHref={eventsHref}
                 labels={{
                   appName: labels.appName,

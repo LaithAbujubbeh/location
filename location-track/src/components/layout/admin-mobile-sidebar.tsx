@@ -16,11 +16,13 @@ type AdminMobileSidebarLabels = {
   signedInAs: string;
   logout: string;
   nav: {
+    devices: string;
     events: string;
   };
 };
 
 type AdminMobileSidebarProps = {
+  devicesHref: string;
   eventsHref: string;
   labels: AdminMobileSidebarLabels;
   locale: Locale;
@@ -31,6 +33,7 @@ type AdminMobileSidebarProps = {
 };
 
 export function AdminMobileSidebar({
+  devicesHref,
   eventsHref,
   labels,
   locale,
@@ -39,6 +42,8 @@ export function AdminMobileSidebar({
   const [isOpen, setIsOpen] = useState(false);
   const displayName = user.name || user.email;
   const isRtl = locale === "ar";
+  const navLinkClass =
+    "rounded-md px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-subtle hover:text-foreground";
 
   useEffect(() => {
     if (!isOpen) {
@@ -136,12 +141,18 @@ export function AdminMobileSidebar({
 
         <nav className="grid gap-1 p-3" aria-label={labels.areaLabel}>
           <Link
-            aria-current="page"
-            className="rounded-md bg-primary-soft px-3 py-2 text-sm font-medium text-primary-dark dark:bg-surface-muted dark:text-foreground"
+            className={navLinkClass}
             href={eventsHref}
             onClick={() => setIsOpen(false)}
           >
             {labels.nav.events}
+          </Link>
+          <Link
+            className={navLinkClass}
+            href={devicesHref}
+            onClick={() => setIsOpen(false)}
+          >
+            {labels.nav.devices}
           </Link>
         </nav>
 

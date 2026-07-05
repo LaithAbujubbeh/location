@@ -96,3 +96,23 @@ Last updated: 2026-07-05
 
 **Pattern notes:**
 Admin timeline pages group private proof and recheck records by employee in stacked cards instead of dense tables. Each proof/recheck record uses the same compact `dl` info grid as event details, so GPS values, reasons, and photo URLs wrap safely on mobile and in RTL layouts. Filters stack on mobile and expand into one row on desktop without replacing the entire page during refetches.
+
+### Admin Devices
+
+File: src/components/admin/admin-devices-client.tsx
+Last updated: 2026-07-05
+
+| Property         | Class           |
+| ---------------- | --------------- |
+| Background       | `bg-surface-elevated`, `bg-surface`, `bg-surface-subtle` |
+| Border           | `border border-border`, `border-border-strong`, tone borders such as `border-danger/25` |
+| Border radius    | `rounded-lg` for device cards, `rounded-md` for filters, table frame, info items, buttons, and notices |
+| Text primary     | `text-foreground`, `text-on-primary` |
+| Text secondary   | `text-text-muted`, `text-text-subtle` |
+| Spacing          | `gap-4`, `gap-3`, card `p-4 sm:p-5`, info item padding `px-3 py-3` |
+| Hover state      | `hover:bg-surface-subtle`, `hover:bg-primary-hover` |
+| Shadow           | `shadow-[var(--shadow-sm)]` |
+| Accent usage     | Device status badges use semantic tones; approve uses primary and reject uses danger |
+
+**Pattern notes:**
+Admin device review follows the admin list pattern: cards below `lg`, a contained desktop table above `lg`, and client-side status filtering with TanStack Query refetches instead of a full navigation refresh. Long device IDs wrap with `break-all`, user agents truncate in the table, and action buttons are full-width on mobile while shrinking on desktop.
