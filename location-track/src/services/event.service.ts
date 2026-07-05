@@ -11,6 +11,7 @@ import {
 import { prisma } from "../lib/prisma.ts";
 import type {
   AdminEventTimelineQueryInput,
+  AdminEventListQueryInput,
   CreateEventInput,
   EmployeeEventDetailQueryInput,
   EmployeeEventListQueryInput,
@@ -122,10 +123,43 @@ export type AdminEventSummary = {
   locationName: string | null;
   startsAt: string;
   endsAt: string;
+  status?: EventStatus;
   radiusMeters: number;
   requirePhoto: boolean;
   requireCheckout: boolean;
   recheckSlots: EventRecheckSlotSummary[];
+  createdAt?: string;
+  assignedEmployeesCount?: number;
+};
+
+export type AdminEventListItem = Required<
+  Pick<
+    AdminEventSummary,
+    | "id"
+    | "name"
+    | "locationName"
+    | "startsAt"
+    | "endsAt"
+    | "status"
+    | "radiusMeters"
+    | "requirePhoto"
+    | "requireCheckout"
+    | "recheckSlots"
+    | "createdAt"
+    | "assignedEmployeesCount"
+  >
+>;
+
+export type AdminEventListResult = {
+  items: AdminEventListItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
 };
 
 export type AdminAssignmentSummary = {
@@ -201,6 +235,10 @@ type GetAdminEventTimelineArgs = {
   query: AdminEventTimelineQueryInput;
 };
 
+type ListAdminEventsArgs = {
+  query: AdminEventListQueryInput;
+};
+
 const eventRecheckSlotSelect = {
   id: true,
   startsAt: true,
@@ -224,6 +262,17 @@ const adminEventSummarySelect = {
       id: true,
       startsAt: true,
       expiresAt: true,
+    },
+  },
+} satisfies Prisma.EventSelect;
+
+const adminEventListSelect = {
+  ...adminEventSummarySelect,
+  status: true,
+  createdAt: true,
+  _count: {
+    select: {
+      assignments: true,
     },
   },
 } satisfies Prisma.EventSelect;
@@ -277,6 +326,10 @@ const adminRecheckSelect = {
 
 type SelectedAdminEventSummary = Prisma.EventGetPayload<{
   select: typeof adminEventSummarySelect;
+}>;
+
+type SelectedAdminEventListItem = Prisma.EventGetPayload<{
+  select: typeof adminEventListSelect;
 }>;
 
 type SelectedAdminAssignment = Prisma.EventAssignmentGetPayload<{
@@ -343,6 +396,23 @@ function toAdminEventSummary(event: SelectedAdminEventSummary): AdminEventSummar
     requirePhoto: event.photoRequired,
     requireCheckout: event.checkoutRequired,
     recheckSlots: event.recheckSlots.map(toEventRecheckSlotSummary),
+  };
+}
+
+function toAdminEventListItem(event: SelectedAdminEventListItem): AdminEventListItem {
+  return {
+    id: event.id,
+    name: event.title,
+    locationName: event.locationName,
+    startsAt: event.startsAt.toISOString(),
+    endsAt: event.endsAt.toISOString(),
+    status: event.status,
+    radiusMeters: event.radiusMeters,
+    requirePhoto: event.photoRequired,
+    requireCheckout: event.checkoutRequired,
+    recheckSlots: event.recheckSlots.map(toEventRecheckSlotSummary),
+    createdAt: event.createdAt.toISOString(),
+    assignedEmployeesCount: event._count.assignments,
   };
 }
 
@@ -595,6 +665,41 @@ export async function createEventForAdmin({
       assignedEmployeesCount: assignments.count,
     };
   });
+}
+
+export async function listAdminEvents({
+  query,
+}: ListAdminEventsArgs): Promise<AdminEventListResult> {
+  const skip = (query.page - 1) * query.pageSize;
+
+  const [total, events] = await prisma.$transaction([
+    prisma.event.count(),
+    prisma.event.findMany({
+      orderBy: [
+        {
+          startsAt: "desc",
+        },
+        {
+          createdAt: "desc",
+        },
+        {
+          id: "asc",
+        },
+      ],
+      skip,
+      take: query.pageSize,
+      select: adminEventListSelect,
+    }),
+  ]);
+
+  return {
+    items: events.map(toAdminEventListItem),
+    pagination: toPagination({
+      page: query.page,
+      pageSize: query.pageSize,
+      total,
+    }),
+  };
 }
 
 export async function listAssignedEventsForEmployee({

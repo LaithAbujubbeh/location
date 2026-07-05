@@ -8,10 +8,16 @@ import {
   rateLimitPolicies,
   rateLimitResponse,
 } from "../../../../lib/rate-limit.ts";
-import { createEventSchema } from "../../../../lib/validators.ts";
+import {
+  adminEventListQuerySchema,
+  createEventSchema,
+  type AdminEventListQueryInput,
+} from "../../../../lib/validators.ts";
 import {
   createEventForAdmin,
   EventServiceError,
+  listAdminEvents,
+  type AdminEventListResult,
   type CreateEventResult,
 } from "../../../../services/event.service.ts";
 
@@ -23,10 +29,22 @@ type AdminEventsRouteDeps = {
   createEvent: typeof createEventForAdmin;
 };
 
-const defaultDeps: AdminEventsRouteDeps = {
+type AdminListEventsRouteDeps = {
+  requireAdminSession: typeof requireAdmin;
+  listEvents: (input: {
+    query: AdminEventListQueryInput;
+  }) => Promise<AdminEventListResult>;
+};
+
+const defaultCreateDeps: AdminEventsRouteDeps = {
   requireAdminSession: requireAdmin,
   consumeRateLimit: consumeUserRateLimit,
   createEvent: createEventForAdmin,
+};
+
+const defaultListDeps: AdminListEventsRouteDeps = {
+  requireAdminSession: requireAdmin,
+  listEvents: listAdminEvents,
 };
 
 function formatValidationError(error: ZodError) {
@@ -40,7 +58,7 @@ function formatValidationError(error: ZodError) {
 
 export async function handleAdminCreateEventRequest(
   request: Request,
-  deps: AdminEventsRouteDeps = defaultDeps,
+  deps: AdminEventsRouteDeps = defaultCreateDeps,
 ) {
   try {
     const adminSession = await deps.requireAdminSession();
@@ -105,6 +123,62 @@ export async function handleAdminCreateEventRequest(
       headers: privateNoStoreHeaders,
     });
   }
+}
+
+export async function handleAdminListEventsRequest(
+  request: Request,
+  deps: AdminListEventsRouteDeps = defaultListDeps,
+) {
+  try {
+    await deps.requireAdminSession();
+
+    const searchParams = new URL(request.url).searchParams;
+    const query = adminEventListQuerySchema.safeParse({
+      page: searchParams.get("page") ?? undefined,
+      pageSize: searchParams.get("pageSize") ?? undefined,
+    });
+
+    if (!query.success) {
+      return apiError(
+        "VALIDATION_ERROR",
+        formatValidationError(query.error),
+        400,
+        {
+          headers: privateNoStoreHeaders,
+        },
+      );
+    }
+
+    const result = await deps.listEvents({
+      query: query.data,
+    });
+
+    return apiSuccess(result, 200, {
+      headers: privateNoStoreHeaders,
+    });
+  } catch (error) {
+    if (error instanceof PermissionError) {
+      return apiError(error.code, error.message, error.status, {
+        headers: privateNoStoreHeaders,
+      });
+    }
+
+    if (error instanceof EventServiceError) {
+      return apiError(error.code, error.message, error.status, {
+        headers: privateNoStoreHeaders,
+      });
+    }
+
+    console.error(error);
+
+    return apiError("INTERNAL_SERVER_ERROR", "Something went wrong.", 500, {
+      headers: privateNoStoreHeaders,
+    });
+  }
+}
+
+export async function GET(request: Request) {
+  return handleAdminListEventsRequest(request);
 }
 
 export async function POST(request: Request) {

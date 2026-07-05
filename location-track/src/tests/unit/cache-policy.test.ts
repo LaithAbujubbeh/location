@@ -41,6 +41,13 @@ test("employee event route is not cached", async () => {
   assert.match(source, /headers: privateNoStoreHeaders/);
 });
 
+test("admin event list route is not cached", async () => {
+  const source = await readRouteSource("../../app/api/admin/events/route.ts");
+
+  assert.match(source, /export const dynamic = "force-dynamic"/);
+  assert.match(source, /headers: privateNoStoreHeaders/);
+});
+
 test("recheck token route is not cached", async () => {
   const source = await readRouteSource(
     "../../app/api/rechecks/[token]/route.ts",

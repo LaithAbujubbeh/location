@@ -124,6 +124,80 @@ body {
   outline-offset: 2px;
 }
 
+.location-picker-map .leaflet-container {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+  overflow: hidden;
+  background: var(--surface-subtle);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.location-picker-map .leaflet-pane,
+.location-picker-map .leaflet-map-pane,
+.location-picker-map .leaflet-tile,
+.location-picker-map .leaflet-marker-icon,
+.location-picker-map .leaflet-marker-shadow,
+.location-picker-map .leaflet-tile-container,
+.location-picker-map .leaflet-pane > svg,
+.location-picker-map .leaflet-pane > canvas,
+.location-picker-map .leaflet-zoom-box,
+.location-picker-map .leaflet-image-layer,
+.location-picker-map .leaflet-layer {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+}
+
+.location-picker-map .leaflet-tile {
+  width: 256px !important;
+  height: 256px !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.location-picker-map .leaflet-tile-pane {
+  z-index: 200;
+}
+
+.location-picker-map .leaflet-overlay-pane {
+  z-index: 400;
+}
+
+.location-picker-map .leaflet-marker-pane {
+  z-index: 600;
+}
+
+.location-picker-map .leaflet-control-container {
+  position: relative;
+  z-index: 800;
+}
+
+.location-picker-map .leaflet-control-attribution,
+.location-picker-map .leaflet-control-zoom a {
+  background: var(--surface-elevated);
+  color: var(--foreground);
+}
+
+.location-picker-map .leaflet-control-attribution a {
+  color: var(--primary);
+}
+
+.location-picker-marker {
+  background: transparent;
+  border: 0;
+}
+
+.location-picker-marker-dot {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--surface-elevated);
+  border-radius: 999px;
+  background: var(--primary);
+  box-shadow: 0 8px 20px rgb(15 23 42 / 0.28);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

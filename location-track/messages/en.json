@@ -47,7 +47,114 @@
       "cardTitle": "Attendance events",
       "cardDescription": "Manage location-based attendance events.",
       "emptyTitle": "No events to display",
-      "emptyDescription": "Created events will appear here."
+      "emptyDescription": "Created events will appear here.",
+      "errorTitle": "Events could not be loaded",
+      "errorDescription": "Refresh the list or try again in a moment.",
+      "noLocation": "Location not specified",
+      "fields": {
+        "actions": "Actions",
+        "assigned": "Assigned",
+        "createdAt": "Created",
+        "location": "Location",
+        "name": "Event",
+        "recheckSlots": "Recheck slots",
+        "status": "Status",
+        "timeWindow": "Time"
+      },
+      "actions": {
+        "create": "Create event",
+        "retry": "Try again",
+        "viewDetails": "View details"
+      },
+      "pagination": {
+        "next": "Next",
+        "previous": "Previous",
+        "summary": "Page {page} of {totalPages}, {total} events"
+      }
+    },
+    "createEvent": {
+      "title": "Create event",
+      "description": "Define the location, schedule, assigned employees, and fixed recheck slots.",
+      "backToEvents": "Back to events",
+      "employeeIdsTemporary": "Employee lookup is not available yet. Enter employee user IDs manually for now.",
+      "selectedEmployees": "{count} employee IDs selected",
+      "noSlotsTitle": "No fixed recheck slots",
+      "noSlotsDescription": "Add slots only when this event requires scheduled rechecks.",
+      "sections": {
+        "assignmentsDescription": "Assign employees by their user IDs until employee search is available.",
+        "assignmentsTitle": "Employee assignment",
+        "basicsDescription": "Set the event name, location, coordinates, and allowed radius.",
+        "basicsTitle": "Event basics",
+        "rechecksDescription": "Fixed slots must sit inside the event start and end time.",
+        "rechecksTitle": "Fixed recheck slots",
+        "scheduleDescription": "Choose the active event window and attendance requirements.",
+        "scheduleTitle": "Schedule and requirements"
+      },
+      "map": {
+        "currentLocationUnavailable": "Current location could not be detected. Choose a point on the map.",
+        "currentLocationUnsupported": "This browser does not support current location.",
+        "defaultHint": "Default center is Amman, Jordan. Click the map to select the event location.",
+        "description": "Click the map or use your current location. The selected position fills the coordinates below.",
+        "noSearchResults": "No matching locations were found.",
+        "search": "Search",
+        "searchAttribution": "Search uses OpenStreetMap Nominatim.",
+        "searchError": "Location search failed. Try again or click the map.",
+        "searchPlaceholder": "Search for a location",
+        "searchRequired": "Enter a location to search for.",
+        "searchResultsLabel": "Location search results",
+        "searching": "Searching",
+        "selectedLocation": "Selected location is shown with the radius circle.",
+        "title": "Pick location on map",
+        "useCurrentLocation": "Use my current location"
+      },
+      "fields": {
+        "employeeIds": "Employee IDs",
+        "endsAt": "Ends at",
+        "latitude": "Latitude",
+        "locationName": "Location name",
+        "longitude": "Longitude",
+        "name": "Event name",
+        "radiusMeters": "Radius meters",
+        "requireCheckout": "Require checkout",
+        "requirePhoto": "Require photo proof",
+        "slotExpiresAt": "Slot expires at",
+        "slotStartsAt": "Slot starts at",
+        "startsAt": "Starts at"
+      },
+      "help": {
+        "coordinates": "Coordinates are filled from the map and can be edited manually if needed.",
+        "employeeIds": "Paste IDs separated by commas, spaces, or new lines.",
+        "requireCheckout": "Employees must submit checkout before leaving.",
+        "requirePhoto": "Photo upload is not configured yet, but the backend can require a photo URL later."
+      },
+      "validation": {
+        "employeeIds": "Add at least one employee ID.",
+        "endsAfterStart": "End time must be after start time.",
+        "latitude": "Latitude must be between -90 and 90.",
+        "longitude": "Longitude must be between -180 and 180.",
+        "radius": "Radius must be a whole number greater than zero.",
+        "required": "This field is required.",
+        "slotInsideWindow": "Inside event window",
+        "slotOutsideWindow": "Outside event window",
+        "slotsInvalid": "Fix recheck slots that are outside the event window before submitting."
+      },
+      "backendErrors": {
+        "FORBIDDEN": "Administrator access is required.",
+        "INVALID_EMPLOYEES": "One or more employee IDs do not belong to employee users.",
+        "INVALID_JSON": "Create event request was not valid JSON.",
+        "REQUEST_FAILED": "Event could not be created.",
+        "UNAUTHORIZED": "Sign in again before creating an event.",
+        "VALIDATION_ERROR": "The submitted event data was not accepted."
+      },
+      "errors": {
+        "unknownSubmitError": "Event could not be created. Try again."
+      },
+      "actions": {
+        "addSlot": "Add slot",
+        "removeSlot": "Remove",
+        "submit": "Create event",
+        "submitting": "Creating"
+      }
     }
   },
   "employee": {
@@ -432,6 +539,8 @@
   },
   "status": {
     "active": "Active",
+    "cancelled": "Cancelled",
+    "draft": "Draft",
     "pending": "Pending",
     "scheduled": "Scheduled",
     "inProgress": "In Progress",

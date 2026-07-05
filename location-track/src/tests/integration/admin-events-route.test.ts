@@ -10,7 +10,7 @@ process.env.BETTER_AUTH_URL ??= "http://localhost:3000";
 const { PRIVATE_NO_STORE_HEADER_VALUE } = await import("../../lib/cache.ts");
 const { PermissionError } = await import("../../lib/permissions.ts");
 const { rateLimitPolicies } = await import("../../lib/rate-limit.ts");
-const { handleAdminCreateEventRequest } = await import(
+const { handleAdminCreateEventRequest, handleAdminListEventsRequest } = await import(
   "../../app/api/admin/events/route.ts"
 );
 
@@ -114,6 +114,64 @@ test("admin can create event through the route handler", async () => {
   assert.equal(body.data.assignedEmployeesCount, 1);
   assert.equal(createdByUserId, "admin_1");
   assert.equal(sawParsedDate, true);
+});
+
+test("admin can list events through the route handler", async () => {
+  const response = await handleAdminListEventsRequest(
+    new Request("http://localhost:3000/api/admin/events?page=2&pageSize=10"),
+    {
+      requireAdminSession: async () =>
+        ({
+          user: {
+            id: "admin_1",
+            role: UserRole.ADMIN,
+          },
+        }) as never,
+      listEvents: async ({ query }) => {
+        assert.equal(query.page, 2);
+        assert.equal(query.pageSize, 10);
+
+        return {
+          items: [
+            {
+              id: "event_1",
+              name: "Warehouse Audit",
+              locationName: "Amman Warehouse",
+              startsAt: "2026-07-10T09:00:00.000Z",
+              endsAt: "2026-07-10T12:00:00.000Z",
+              status: EventStatus.SCHEDULED,
+              radiusMeters: 75,
+              requirePhoto: true,
+              requireCheckout: true,
+              recheckSlots: [],
+              createdAt: "2026-07-10T08:00:00.000Z",
+              assignedEmployeesCount: 3,
+            },
+          ],
+          pagination: {
+            page: query.page,
+            pageSize: query.pageSize,
+            total: 11,
+            totalPages: 2,
+            hasNextPage: false,
+            hasPreviousPage: true,
+          },
+        };
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(
+    response.headers.get("Cache-Control"),
+    PRIVATE_NO_STORE_HEADER_VALUE,
+  );
+
+  const body = await response.json();
+
+  assert.equal(body.ok, true);
+  assert.equal(body.data.items[0].assignedEmployeesCount, 3);
+  assert.equal(body.data.pagination.page, 2);
 });
 
 test("admin create event rejects a recheck slot outside the event window", async () => {

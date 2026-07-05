@@ -122,6 +122,15 @@ export type EmployeeEventListQueryInput = z.infer<
   typeof employeeEventListQuerySchema
 >;
 
+export const adminEventListQuerySchema = z.object({
+  page: paginationNumber(1, 10000),
+  pageSize: paginationNumber(20, 100),
+});
+
+export type AdminEventListQueryInput = z.infer<
+  typeof adminEventListQuerySchema
+>;
+
 export const adminEventTimelineQuerySchema = z.object({
   page: paginationNumber(1, 10000),
   pageSize: paginationNumber(20, 100),
