@@ -48,6 +48,18 @@ test("admin event list route is not cached", async () => {
   assert.match(source, /headers: privateNoStoreHeaders/);
 });
 
+test("admin users routes are not cached", async () => {
+  const listSource = await readRouteSource("../../app/api/admin/users/route.ts");
+  const detailSource = await readRouteSource(
+    "../../app/api/admin/users/[userId]/route.ts",
+  );
+
+  assert.match(listSource, /export const dynamic = "force-dynamic"/);
+  assert.match(listSource, /headers: privateNoStoreHeaders/);
+  assert.match(detailSource, /export const dynamic = "force-dynamic"/);
+  assert.match(detailSource, /headers: privateNoStoreHeaders/);
+});
+
 test("recheck token route is not cached", async () => {
   const source = await readRouteSource(
     "../../app/api/rechecks/[token]/route.ts",
@@ -126,6 +138,16 @@ test("client query keys describe private data without Next cache tags", () => {
     "event_1",
     "timeline",
   ]);
+  assert.deepEqual(clientQueryKeys.admin.users.list(), [
+    "admin",
+    "users",
+    "list",
+  ]);
+  assert.deepEqual(clientQueryKeys.admin.users.detail("user_1"), [
+    "admin",
+    "users",
+    "user_1",
+  ]);
   assert.deepEqual(clientQueryKeys.rechecks.detail("token_1"), [
     "rechecks",
     "detail",
@@ -158,6 +180,10 @@ test("mutation invalidation plan covers required private refreshes", () => {
   assert.deepEqual(mutationInvalidationPlan.adminReviewDevice, [
     "admin.devices.list",
     "employee.devices.status",
+  ]);
+  assert.deepEqual(mutationInvalidationPlan.adminUserMutation, [
+    "admin.users.list",
+    "admin.users.detail",
   ]);
   assert.deepEqual(mutationInvalidationPlan.employeeReadNotification, [
     "employee.notifications.list",

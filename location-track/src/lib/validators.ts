@@ -1,4 +1,4 @@
-import { AssignmentStatus, DeviceStatus } from "@prisma/client";
+import { AssignmentStatus, DeviceStatus, UserRole } from "@prisma/client";
 import { z } from "zod";
 
 const dateString = z
@@ -205,6 +205,45 @@ export type AdminDeviceListQueryInput = z.infer<
 
 export const deviceRouteParamsSchema = z.object({
   deviceId: z.string().trim().min(1),
+});
+
+export const adminUserListQuerySchema = z.object({
+  page: paginationNumber(1, 10000),
+  pageSize: paginationNumber(20, 100),
+  isActive: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) =>
+      value === undefined ? undefined : value === "true",
+    ),
+  role: z.enum(UserRole).optional(),
+  search: z.string().trim().max(120).optional(),
+});
+
+export type AdminUserListQueryInput = z.infer<
+  typeof adminUserListQuerySchema
+>;
+
+export const createAdminUserSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  email: z.string().trim().email().max(255).transform((value) => value.toLowerCase()),
+  password: z.string().min(8).max(128),
+  isActive: z.boolean().default(true),
+  role: z.enum(UserRole),
+});
+
+export type CreateAdminUserInput = z.infer<typeof createAdminUserSchema>;
+
+export const updateAdminUserSchema = z.object({
+  isActive: z.boolean(),
+  name: z.string().trim().min(1).max(120),
+  role: z.enum(UserRole),
+});
+
+export type UpdateAdminUserInput = z.infer<typeof updateAdminUserSchema>;
+
+export const userRouteParamsSchema = z.object({
+  userId: z.string().trim().min(1),
 });
 
 export const eventRouteParamsSchema = z.object({

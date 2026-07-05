@@ -32,6 +32,10 @@ export function loginPath(locale: Locale, nextPath?: string) {
   return `${basePath}?next=${encodeURIComponent(nextPath)}`;
 }
 
+export function inactiveAccountLoginPath(locale: Locale, nextPath: string) {
+  return `${loginPath(locale, nextPath)}&error=accountInactive`;
+}
+
 export function getSafeNextPath(locale: Locale, nextPath: string | undefined) {
   if (
     !nextPath ||
@@ -50,6 +54,10 @@ async function requirePageUser(locale: Locale, nextPath: string) {
   } catch (error) {
     if (error instanceof PermissionError && error.status === 401) {
       redirect(loginPath(locale, nextPath));
+    }
+
+    if (error instanceof PermissionError && error.code === "ACCOUNT_INACTIVE") {
+      redirect(inactiveAccountLoginPath(locale, nextPath));
     }
 
     throw error;

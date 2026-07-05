@@ -2,6 +2,7 @@ import { UserRole } from "@prisma/client";
 import { headers } from "next/headers.js";
 
 import { auth } from "./auth.ts";
+import { prisma } from "./prisma.ts";
 
 export { UserRole };
 
@@ -81,11 +82,37 @@ export async function requireUser(): Promise<AuthenticatedSession> {
     throw new PermissionError(403, "INVALID_ROLE", "User role is invalid.");
   }
 
+  const user = await prisma.user.findUnique({
+    where: {
+      id: session.user.id,
+    },
+    select: {
+      isActive: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    throw new PermissionError(401, "UNAUTHORIZED", "Authentication is required.");
+  }
+
+  if (!user.isActive) {
+    throw new PermissionError(
+      403,
+      "ACCOUNT_INACTIVE",
+      "This user account is inactive.",
+    );
+  }
+
+  if (!isUserRole(user.role)) {
+    throw new PermissionError(403, "INVALID_ROLE", "User role is invalid.");
+  }
+
   return {
     ...session,
     user: {
       ...session.user,
-      role,
+      role: user.role,
     },
   };
 }

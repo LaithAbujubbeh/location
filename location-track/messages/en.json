@@ -27,6 +27,7 @@
       "submit": "Sign in",
       "submitting": "Signing in",
       "requiredError": "Email and password are required.",
+      "inactiveError": "This account is inactive. Contact an administrator to restore access.",
       "invalidError": "The email or password is incorrect."
     },
     "logout": "Log out",
@@ -40,7 +41,8 @@
     },
     "nav": {
       "devices": "Devices",
-      "events": "Events"
+      "events": "Events",
+      "users": "Users"
     },
     "events": {
       "title": "Events",
@@ -112,16 +114,96 @@
         "summary": "Page {page} of {totalPages}, {total} devices"
       }
     },
+    "users": {
+      "title": "Users",
+      "description": "Create employees and admins, review roles, and manage access.",
+      "createTitle": "Create user",
+      "createDescription": "Create an employee or administrator with a temporary password.",
+      "editTitle": "Edit user",
+      "editDescription": "Update a user's display name and role.",
+      "cardTitle": "Admin users",
+      "cardDescription": "Manage employee and administrator accounts.",
+      "emptyTitle": "No users to display",
+      "emptyDescription": "Users matching the current filters will appear here.",
+      "errorTitle": "Users could not be loaded",
+      "errorDescription": "Refresh the list or try again in a moment.",
+      "fields": {
+        "accountStatus": "Account status",
+        "actions": "Actions",
+        "createdAt": "Created",
+        "email": "Email",
+        "isActive": "Active account",
+        "name": "Name",
+        "password": "Temporary password",
+        "role": "Role",
+        "updatedAt": "Updated"
+      },
+      "filters": {
+        "allRoles": "All roles",
+        "allStatuses": "All statuses",
+        "searchPlaceholder": "Search name or email"
+      },
+      "roles": {
+        "admin": "Admin",
+        "employee": "Employee"
+      },
+      "form": {
+        "createTitle": "User details",
+        "createDescription": "The password is stored through Better Auth-compatible credential hashing.",
+        "editTitle": "User access",
+        "editDescription": "Email stays read-only for now to avoid unsafe Better Auth account changes.",
+        "emailReadonly": "Email editing is disabled for now.",
+        "isActiveDescription": "Inactive users stay in the system but cannot access protected app areas."
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "validation": {
+        "password": "Password must be at least 8 characters.",
+        "required": "This field is required."
+      },
+      "backendErrors": {
+        "EMAIL_ALREADY_EXISTS": "A user with this email already exists.",
+        "FORBIDDEN": "Administrator access is required.",
+        "INVALID_JSON": "User request was not valid JSON.",
+        "LAST_ACTIVE_ADMIN_REQUIRED": "At least one active administrator is required.",
+        "LAST_ADMIN_DEMOTION_NOT_ALLOWED": "The last administrator cannot be demoted.",
+        "REQUEST_FAILED": "User request failed.",
+        "SELF_DEACTIVATION_NOT_ALLOWED": "You cannot deactivate your own administrator account.",
+        "SELF_DEMOTION_NOT_ALLOWED": "You cannot remove your own administrator role.",
+        "UNAUTHORIZED": "Sign in again before managing users.",
+        "USER_NOT_FOUND": "User was not found.",
+        "VALIDATION_ERROR": "The submitted user data was not accepted."
+      },
+      "errors": {
+        "unknownSubmitError": "User could not be saved. Try again."
+      },
+      "actions": {
+        "backToUsers": "Back to users",
+        "cancel": "Cancel",
+        "create": "Create user",
+        "edit": "Edit",
+        "retry": "Try again",
+        "save": "Save changes",
+        "saving": "Saving"
+      },
+      "pagination": {
+        "next": "Next",
+        "previous": "Previous",
+        "summary": "Page {page} of {totalPages}, {total} users"
+      }
+    },
     "createEvent": {
       "title": "Create event",
       "description": "Define the location, schedule, assigned employees, and fixed recheck slots.",
       "backToEvents": "Back to events",
-      "employeeIdsTemporary": "Employee lookup is not available yet. Enter employee user IDs manually for now.",
+      "employeeIdsTemporary": "Choose employees from the user list.",
       "selectedEmployees": "{count} employee IDs selected",
       "noSlotsTitle": "No fixed recheck slots",
       "noSlotsDescription": "Add slots only when this event requires scheduled rechecks.",
       "sections": {
-        "assignmentsDescription": "Assign employees by their user IDs until employee search is available.",
+        "assignmentsDescription": "Search employees and select who should attend this event.",
         "assignmentsTitle": "Employee assignment",
         "basicsDescription": "Set the event name, location, coordinates, and allowed radius.",
         "basicsTitle": "Event basics",
@@ -163,7 +245,7 @@
       },
       "help": {
         "coordinates": "Coordinates are filled from the map and can be edited manually if needed.",
-        "employeeIds": "Paste IDs separated by commas, spaces, or new lines.",
+        "employeeIds": "Selected employees are submitted as employee IDs.",
         "requireCheckout": "Employees must submit checkout before leaving.",
         "requirePhoto": "Photo upload is not configured yet, but the backend can require a photo URL later."
       },
@@ -192,8 +274,16 @@
       "actions": {
         "addSlot": "Add slot",
         "removeSlot": "Remove",
+        "retryEmployees": "Retry loading employees",
         "submit": "Create event",
         "submitting": "Creating"
+      },
+      "employees": {
+        "empty": "No employees found.",
+        "error": "Employees could not be loaded.",
+        "loading": "Loading employees",
+        "searchPlaceholder": "Search employees",
+        "selected": "Selected"
       }
     },
     "eventDetails": {

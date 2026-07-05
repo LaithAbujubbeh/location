@@ -19,6 +19,10 @@ export const clientQueryKeys = {
     devices: {
       list: () => ["admin", "devices", "list"] as const,
     },
+    users: {
+      detail: (userId: string) => ["admin", "users", userId] as const,
+      list: () => ["admin", "users", "list"] as const,
+    },
   },
   employee: {
     devices: {
@@ -63,6 +67,7 @@ export const mutationInvalidationPlan = {
     "admin.events.employees",
   ],
   adminReviewDevice: ["admin.devices.list", "employee.devices.status"],
+  adminUserMutation: ["admin.users.list", "admin.users.detail"],
   employeeReadNotification: ["employee.notifications.list"],
 } as const;
 

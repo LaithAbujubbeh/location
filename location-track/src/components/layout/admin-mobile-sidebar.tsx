@@ -18,6 +18,7 @@ type AdminMobileSidebarLabels = {
   nav: {
     devices: string;
     events: string;
+    users: string;
   };
 };
 
@@ -26,6 +27,7 @@ type AdminMobileSidebarProps = {
   eventsHref: string;
   labels: AdminMobileSidebarLabels;
   locale: Locale;
+  usersHref: string;
   user: {
     name?: string | null;
     email: string;
@@ -37,6 +39,7 @@ export function AdminMobileSidebar({
   eventsHref,
   labels,
   locale,
+  usersHref,
   user,
 }: AdminMobileSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -153,6 +156,13 @@ export function AdminMobileSidebar({
             onClick={() => setIsOpen(false)}
           >
             {labels.nav.devices}
+          </Link>
+          <Link
+            className={navLinkClass}
+            href={usersHref}
+            onClick={() => setIsOpen(false)}
+          >
+            {labels.nav.users}
           </Link>
         </nav>
 

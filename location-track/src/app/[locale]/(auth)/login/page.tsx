@@ -17,7 +17,7 @@ import { getCurrentSession, isUserRole } from "@/lib/permissions";
 
 type LoginPageProps = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ next?: string | string[] }>;
+  searchParams: Promise<{ error?: string | string[]; next?: string | string[] }>;
 };
 
 export default async function LoginPage({
@@ -33,14 +33,18 @@ export default async function LoginPage({
   const locale: Locale = localeParam;
   const messages = await getMessages(locale);
   const search = await searchParams;
+  const requestedError = Array.isArray(search.error)
+    ? search.error[0]
+    : search.error;
   const requestedNext = Array.isArray(search.next) ? search.next[0] : search.next;
+  const isInactiveAccountError = requestedError === "accountInactive";
   const safeNextPath =
     getSafeNextPath(locale, requestedNext) ??
     roleHomePath(locale, UserRole.EMPLOYEE);
   const session = await getCurrentSession();
   const role = (session?.user as { role?: unknown } | undefined)?.role;
 
-  if (isUserRole(role)) {
+  if (isUserRole(role) && !isInactiveAccountError) {
     redirect(getSafeNextPath(locale, requestedNext) ?? roleHomePath(locale, role));
   }
 
@@ -81,8 +85,14 @@ export default async function LoginPage({
           </CardHeader>
           <CardContent>
             <LoginForm
+              initialError={
+                isInactiveAccountError
+                  ? messages.auth.login.inactiveError
+                  : undefined
+              }
               labels={{
                 email: messages.auth.login.email,
+                inactiveError: messages.auth.login.inactiveError,
                 invalidError: messages.auth.login.invalidError,
                 password: messages.auth.login.password,
                 requiredError: messages.auth.login.requiredError,

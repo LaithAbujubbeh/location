@@ -116,3 +116,23 @@ Last updated: 2026-07-05
 
 **Pattern notes:**
 Admin device review follows the admin list pattern: cards below `lg`, a contained desktop table above `lg`, and client-side status filtering with TanStack Query refetches instead of a full navigation refresh. Long device IDs wrap with `break-all`, user agents truncate in the table, and action buttons are full-width on mobile while shrinking on desktop.
+
+### Admin Users
+
+File: src/components/admin/admin-users-client.tsx, src/components/admin/admin-user-form.tsx
+Last updated: 2026-07-05
+
+| Property         | Class           |
+| ---------------- | --------------- |
+| Background       | `bg-surface-elevated`, `bg-surface`, `bg-surface-subtle` |
+| Border           | `border border-border`, `border-border-strong`, `border-input`, tone borders such as `border-danger/25` |
+| Border radius    | `rounded-lg` for cards, `rounded-md` for tables, fields, filters, buttons, and notices |
+| Text primary     | `text-foreground`, `text-on-primary` |
+| Text secondary   | `text-text-muted`, `text-text-subtle` |
+| Spacing          | `gap-4`, `gap-3`, `p-4 sm:p-5`, table/filter padding `px-3 py-3` |
+| Hover state      | `hover:bg-surface-subtle`, `hover:bg-primary-hover` |
+| Shadow           | `shadow-[var(--shadow-sm)]` |
+| Accent usage     | Admin role uses primary badges; employee role uses neutral badges; active status uses success/danger badges; errors use danger notices |
+
+**Pattern notes:**
+Admin user management follows the private admin dashboard pattern: responsive mobile cards below `lg`, a contained desktop table, and form cards with single-column mobile layout. User creation/editing keeps email read-only during edit, shows backend validation directly, and uses full-width mobile actions that collapse to compact desktop controls. Active/inactive state is shown as a semantic badge and managed from the same edit form. Create-event employee assignment reuses the user list endpoint as a bounded, searchable checkbox list inside the existing event form.

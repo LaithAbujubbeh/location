@@ -16,6 +16,7 @@ type AdminShellLabels = {
   nav: {
     devices: string;
     events: string;
+    users: string;
   };
   language: {
     label: string;
@@ -48,6 +49,7 @@ export function AdminShell({
 }: AdminShellProps) {
   const devicesHref = `/${locale}/admin/devices`;
   const eventsHref = `/${locale}/admin/events`;
+  const usersHref = `/${locale}/admin/users`;
   const displayName = user.name || user.email;
   const navLinkClass =
     "rounded-md px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-subtle hover:text-foreground";
@@ -70,6 +72,9 @@ export function AdminShell({
           </Link>
           <Link className={navLinkClass} href={devicesHref}>
             {labels.nav.devices}
+          </Link>
+          <Link className={navLinkClass} href={usersHref}>
+            {labels.nav.users}
           </Link>
         </nav>
 
@@ -104,6 +109,7 @@ export function AdminShell({
                   signedInAs: labels.signedInAs,
                 }}
                 locale={locale}
+                usersHref={usersHref}
                 user={user}
               />
               <div className="grid min-w-0 gap-0.5">

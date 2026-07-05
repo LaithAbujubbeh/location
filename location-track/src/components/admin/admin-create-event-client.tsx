@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
@@ -19,6 +19,11 @@ import {
   adminEventQueryKeys,
   createAdminEvent,
 } from "@/lib/admin-events";
+import {
+  adminUserQueryKeys,
+  adminUserQueryOptions,
+  fetchAdminUsers,
+} from "@/lib/admin-users";
 import type { Locale, Messages } from "@/lib/i18n";
 
 const LocationPickerMap = dynamic(
@@ -73,17 +78,6 @@ function parseNullableNumber(value: string) {
   const parsed = parseNumber(value);
 
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function parseEmployeeIds(value: string) {
-  return [
-    ...new Set(
-      value
-        .split(/[\s,]+/)
-        .map((item) => item.trim())
-        .filter(Boolean),
-    ),
-  ];
 }
 
 function toIsoString(value: string) {
@@ -171,15 +165,30 @@ export function AdminCreateEventClient({
   const [endsAt, setEndsAt] = useState(defaultEndsAt);
   const [requirePhoto, setRequirePhoto] = useState(false);
   const [requireCheckout, setRequireCheckout] = useState(true);
-  const [employeeIdsText, setEmployeeIdsText] = useState("");
+  const [employeeSearch, setEmployeeSearch] = useState("");
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [slots, setSlots] = useState<RecheckSlotForm[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [slotError, setSlotError] = useState<string | null>(null);
 
-  const employeeIds = useMemo(
-    () => parseEmployeeIds(employeeIdsText),
-    [employeeIdsText],
-  );
+  const employeeIds = selectedEmployeeIds;
+  const employeesQuery = useQuery({
+    queryFn: () =>
+      fetchAdminUsers({
+        isActive: true,
+        page: 1,
+        pageSize: 100,
+        role: "EMPLOYEE",
+        search: employeeSearch,
+      }),
+    queryKey: [
+      ...adminUserQueryKeys.adminUsers(),
+      "event-assignment",
+      "EMPLOYEE",
+      employeeSearch,
+    ],
+    ...adminUserQueryOptions,
+  });
   const latitudeNumber = parseNullableNumber(latitude);
   const longitudeNumber = parseNullableNumber(longitude);
   const selectedLatitude =
@@ -316,6 +325,19 @@ export function AdminCreateEventClient({
       delete nextErrors.longitude;
       return nextErrors;
     });
+  }
+
+  function toggleEmployee(employeeId: string) {
+    setFieldErrors((current) => {
+      const nextErrors = { ...current };
+      delete nextErrors.employeeIds;
+      return nextErrors;
+    });
+    setSelectedEmployeeIds((current) =>
+      current.includes(employeeId)
+        ? current.filter((id) => id !== employeeId)
+        : [...current, employeeId],
+    );
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -478,12 +500,68 @@ export function AdminCreateEventClient({
             error={fieldErrors.employeeIds}
             label={labels.fields.employeeIds}
           >
-            <textarea
-              className="min-h-28 w-full min-w-0 resize-y rounded-md border border-input bg-surface px-3 py-2 text-sm text-foreground shadow-[var(--shadow-sm)] transition-colors placeholder:text-text-subtle"
-              onChange={(event) => setEmployeeIdsText(event.target.value)}
-              value={employeeIdsText}
+            <Input
+              onChange={(event) => setEmployeeSearch(event.target.value)}
+              placeholder={labels.employees.searchPlaceholder}
+              value={employeeSearch}
             />
           </Field>
+          {employeesQuery.isLoading ? (
+            <div className="rounded-md border border-border bg-surface px-3 py-4 text-sm text-text-muted">
+              {labels.employees.loading}
+            </div>
+          ) : null}
+          {employeesQuery.isError ? (
+            <WarningBox tone="danger">
+              <span className="block">{labels.employees.error}</span>
+              <Button
+                className="mt-3 w-full sm:w-fit"
+                onClick={() => void employeesQuery.refetch()}
+                variant="outline"
+              >
+                {labels.actions.retryEmployees}
+              </Button>
+            </WarningBox>
+          ) : null}
+          {employeesQuery.data && !employeesQuery.data.items.length ? (
+            <div className="rounded-md border border-dashed border-border-strong bg-surface px-3 py-6 text-center text-sm text-text-muted">
+              {labels.employees.empty}
+            </div>
+          ) : null}
+          {employeesQuery.data?.items.length ? (
+            <div className="grid max-h-80 gap-2 overflow-y-auto rounded-md border border-border bg-surface p-2">
+              {employeesQuery.data.items.map((employee) => {
+                const selected = selectedEmployeeIds.includes(employee.id);
+
+                return (
+                  <label
+                    className="flex min-w-0 items-start gap-3 rounded-md px-3 py-3 hover:bg-surface-subtle"
+                    key={employee.id}
+                  >
+                    <input
+                      checked={selected}
+                      className="mt-1 size-4 accent-primary"
+                      onChange={() => toggleEmployee(employee.id)}
+                      type="checkbox"
+                    />
+                    <span className="grid min-w-0 gap-1">
+                      <span className="break-words text-sm font-medium text-foreground">
+                        {employee.name}
+                      </span>
+                      <span className="break-all text-xs leading-5 text-text-muted">
+                        {employee.email}
+                      </span>
+                      {selected ? (
+                        <span className="text-xs font-medium text-success">
+                          {labels.employees.selected}
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : null}
           <p className="text-sm text-text-muted">
             {labels.selectedEmployees.replace("{count}", String(employeeIds.length))}
           </p>

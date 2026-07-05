@@ -1,14 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
-import { signIn } from "@/lib/auth-client";
+import { signIn, signOut } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type LoginFormLabels = {
   email: string;
+  inactiveError: string;
   password: string;
   submit: string;
   submitting: string;
@@ -17,14 +18,35 @@ type LoginFormLabels = {
 };
 
 type LoginFormProps = {
+  initialError?: string;
   labels: LoginFormLabels;
   nextPath: string;
 };
 
-export function LoginForm({ labels, nextPath }: LoginFormProps) {
+type AuthError = {
+  code?: string;
+  message?: string;
+};
+
+function isInactiveAccountError(error: AuthError | null | undefined) {
+  return (
+    error?.code === "ACCOUNT_INACTIVE" ||
+    error?.message === "This user account is inactive."
+  );
+}
+
+export function LoginForm({ initialError, labels, nextPath }: LoginFormProps) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!initialError) {
+      return;
+    }
+
+    void signOut();
+  }, [initialError]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,7 +71,20 @@ export function LoginForm({ labels, nextPath }: LoginFormProps) {
       });
 
       if (result.error) {
-        setError(labels.invalidError);
+        setError(
+          isInactiveAccountError(result.error)
+            ? labels.inactiveError
+            : labels.invalidError,
+        );
+        return;
+      }
+
+      if (
+        result.data?.user &&
+        (result.data.user as { isActive?: unknown }).isActive === false
+      ) {
+        await signOut();
+        setError(labels.inactiveError);
         return;
       }
 

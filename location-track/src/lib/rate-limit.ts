@@ -104,6 +104,11 @@ export const rateLimitPolicies = {
     limit: 30,
     windowMs: 10 * 60 * 1000,
   },
+  adminUserMutation: {
+    name: "admin-user-mutation",
+    limit: 20,
+    windowMs: 60 * 60 * 1000,
+  },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 const defaultRateLimitStore = new InMemoryRateLimitStore();

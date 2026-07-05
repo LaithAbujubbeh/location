@@ -1,4 +1,5 @@
 import { prismaAdapter } from "@better-auth/prisma-adapter";
+import { APIError } from "better-auth";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 
@@ -12,12 +13,41 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  databaseHooks: {
+    session: {
+      create: {
+        async before(session) {
+          const user = await prisma.user.findUnique({
+            where: {
+              id: session.userId,
+            },
+            select: {
+              isActive: true,
+            },
+          });
+
+          if (!user?.isActive) {
+            throw APIError.from("FORBIDDEN", {
+              code: "ACCOUNT_INACTIVE",
+              message: "This user account is inactive.",
+            });
+          }
+        },
+      },
+    },
+  },
   user: {
     additionalFields: {
       role: {
         type: "string",
         required: true,
         defaultValue: "EMPLOYEE",
+        input: false,
+      },
+      isActive: {
+        type: "boolean",
+        required: true,
+        defaultValue: true,
         input: false,
       },
     },

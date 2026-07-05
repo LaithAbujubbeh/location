@@ -589,6 +589,7 @@ export async function createEventForAdmin({
         id: {
           in: input.employeeIds,
         },
+        isActive: true,
         role: UserRole.EMPLOYEE,
       },
     });
