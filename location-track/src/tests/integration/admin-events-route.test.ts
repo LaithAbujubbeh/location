@@ -137,6 +137,8 @@ test("admin can list events through the route handler", async () => {
               id: "event_1",
               name: "Warehouse Audit",
               locationName: "Amman Warehouse",
+              latitude: 31.9539,
+              longitude: 35.9106,
               startsAt: "2026-07-10T09:00:00.000Z",
               endsAt: "2026-07-10T12:00:00.000Z",
               status: EventStatus.SCHEDULED,

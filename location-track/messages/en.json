@@ -155,6 +155,75 @@
         "submit": "Create event",
         "submitting": "Creating"
       }
+    },
+    "eventDetails": {
+      "title": "Event details",
+      "description": "Review event setup, fixed recheck slots, assigned employees, and attendance status.",
+      "errorTitle": "Event details could not be loaded",
+      "errorDescription": "Refresh the page or return to the event list.",
+      "emptyEmployeesTitle": "No assigned employees to display",
+      "emptyEmployeesDescription": "Assigned employees matching the current filters will appear here.",
+      "noRechecksTitle": "No fixed recheck slots",
+      "noRechecksDescription": "This event does not have fixed recheck slots.",
+      "noRecheck": "No recheck",
+      "none": "None",
+      "notSubmitted": "Not submitted yet",
+      "radiusMeters": "{value} meters",
+      "timelinePreviewUnavailable": "Timeline preview could not be loaded, so latest recheck statuses may be unavailable.",
+      "sections": {
+        "employeesDescription": "Track each employee assignment and latest attendance signals.",
+        "employeesTitle": "Employee status",
+        "locationDescription": "Selected coordinates and attendance radius.",
+        "locationTitle": "Location summary",
+        "rechecksDescription": "Fixed recheck windows configured for this event.",
+        "rechecksTitle": "Fixed recheck slots",
+        "summaryDescription": "Event configuration and attendance requirements.",
+        "summaryTitle": "Event summary"
+      },
+      "stats": {
+        "checkedIn": "Checked in",
+        "completed": "Completed",
+        "inProgress": "In progress",
+        "missedFailed": "Missed/failed",
+        "suspicious": "Suspicious",
+        "totalAssigned": "Total assigned"
+      },
+      "fields": {
+        "assignmentStatus": "Assignment status",
+        "checkedInAt": "Checked in",
+        "checkedOutAt": "Checked out",
+        "employee": "Employee",
+        "finalReason": "Final reason",
+        "latestRecheck": "Latest recheck",
+        "latitude": "Latitude",
+        "location": "Location",
+        "longitude": "Longitude",
+        "radius": "Radius",
+        "requireCheckout": "Require checkout",
+        "requirePhoto": "Require photo",
+        "slotExpiresAt": "Expires at",
+        "slotStartsAt": "Starts at",
+        "status": "Status",
+        "timeWindow": "Time"
+      },
+      "filters": {
+        "allStatuses": "All statuses",
+        "employeeSearchPlaceholder": "Search employee name, email, or ID"
+      },
+      "boolean": {
+        "no": "No",
+        "yes": "Yes"
+      },
+      "pagination": {
+        "next": "Next",
+        "previous": "Previous",
+        "summary": "Page {page} of {totalPages}, {total} assignments"
+      },
+      "actions": {
+        "backToEvents": "Back to events",
+        "refresh": "Refresh",
+        "retry": "Try again"
+      }
     }
   },
   "employee": {

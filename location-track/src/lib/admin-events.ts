@@ -1,4 +1,10 @@
-import type { EventStatus } from "@prisma/client";
+import type {
+  AssignmentStatus,
+  EventStatus,
+  ProofStatus,
+  ProofType,
+  RecheckStatus,
+} from "@prisma/client";
 
 import type { ApiErrorBody, ApiSuccessBody } from "@/lib/api-response";
 import { clientQueryKeys } from "@/lib/cache";
@@ -9,6 +15,10 @@ export const adminEventQueryOptions = {
 } as const;
 
 export const adminEventQueryKeys = {
+  adminEventEmployees: (eventId: string) =>
+    clientQueryKeys.admin.events.employees(eventId),
+  adminEventTimeline: (eventId: string) =>
+    clientQueryKeys.admin.events.timeline(eventId),
   adminEvents: () => clientQueryKeys.admin.events.list(),
 };
 
@@ -22,6 +32,8 @@ export type AdminEventListItem = {
   id: string;
   name: string;
   locationName: string | null;
+  latitude: number;
+  longitude: number;
   startsAt: string;
   endsAt: string;
   status: EventStatus;
@@ -43,6 +55,76 @@ export type AdminEventListResult = {
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+};
+
+export type AdminEventSummary = Omit<
+  AdminEventListItem,
+  "assignedEmployeesCount" | "createdAt" | "status"
+> & {
+  status?: EventStatus;
+  createdAt?: string;
+  assignedEmployeesCount?: number;
+};
+
+export type AdminAssignmentSummary = {
+  assignmentId: string;
+  employeeId: string;
+  employee: {
+    name: string;
+    email: string;
+  } | null;
+  status: AssignmentStatus;
+  checkedInAt: string | null;
+  checkedOutAt: string | null;
+  finalReason: string | null;
+};
+
+export type AdminEventEmployeesResult = {
+  event: AdminEventSummary;
+  assignments: AdminAssignmentSummary[];
+  pagination: AdminEventListResult["pagination"];
+};
+
+export type AdminProofTimelineRecord = {
+  id: string;
+  assignmentId: string;
+  employeeId: string;
+  type: ProofType;
+  status: ProofStatus;
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number;
+  distanceMeters: number;
+  gpsTimestamp: string;
+  photoUrl: string | null;
+  reason: string | null;
+  createdAt: string;
+};
+
+export type AdminRecheckTimelineRecord = {
+  id: string;
+  assignmentId: string;
+  employeeId: string;
+  status: RecheckStatus;
+  startsAt: string;
+  expiresAt: string;
+  submittedAt: string | null;
+  notificationSentAt: string | null;
+  reason: string | null;
+};
+
+export type AdminEventTimelineAssignment = AdminAssignmentSummary & {
+  proofs: AdminProofTimelineRecord[];
+  rechecks: AdminRecheckTimelineRecord[];
+};
+
+export type AdminEventTimelineResult = {
+  event: AdminEventSummary;
+  recheckSlots: AdminEventRecheckSlot[];
+  assignments: AdminEventTimelineAssignment[];
+  timeline: AdminProofTimelineRecord[];
+  rechecks: AdminRecheckTimelineRecord[];
+  pagination: AdminEventListResult["pagination"];
 };
 
 export type AdminCreateEventPayload = {
@@ -115,6 +197,74 @@ export async function fetchAdminEvents({
   });
 
   return readAdminApiBody<AdminEventListResult>(response);
+}
+
+export async function fetchAdminEventEmployees({
+  employeeId,
+  eventId,
+  page = 1,
+  pageSize = 50,
+  status,
+}: {
+  employeeId?: string;
+  eventId: string;
+  page?: number;
+  pageSize?: number;
+  status?: AssignmentStatus | "";
+}) {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+
+  if (status) {
+    searchParams.set("status", status);
+  }
+
+  if (employeeId) {
+    searchParams.set("employeeId", employeeId);
+  }
+
+  const response = await fetch(
+    `/api/admin/events/${eventId}/employees?${searchParams}`,
+    {
+      cache: "no-store",
+      credentials: "same-origin",
+    },
+  );
+
+  return readAdminApiBody<AdminEventEmployeesResult>(response);
+}
+
+export async function fetchAdminEventTimeline({
+  eventId,
+  page = 1,
+  pageSize = 50,
+  status,
+}: {
+  eventId: string;
+  page?: number;
+  pageSize?: number;
+  status?: AssignmentStatus | "";
+}) {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+
+  if (status) {
+    searchParams.set("status", status);
+  }
+
+  const response = await fetch(
+    `/api/admin/events/${eventId}/timeline?${searchParams}`,
+    {
+      cache: "no-store",
+      credentials: "same-origin",
+    },
+  );
+
+  return readAdminApiBody<AdminEventTimelineResult>(response);
 }
 
 export async function createAdminEvent(payload: AdminCreateEventPayload) {

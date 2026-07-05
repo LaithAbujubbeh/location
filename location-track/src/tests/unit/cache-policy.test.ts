@@ -72,6 +72,8 @@ test("admin timeline responses with private employee data are not cached", async
           id: eventId,
           name: "Warehouse Audit",
           locationName: "Amman Warehouse",
+          latitude: 31.9539,
+          longitude: 35.9106,
           startsAt: "2026-07-10T08:00:00.000Z",
           endsAt: "2026-07-10T16:00:00.000Z",
           radiusMeters: 90,

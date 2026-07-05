@@ -56,3 +56,23 @@ Last updated: 2026-07-05
 
 **Pattern notes:**
 Admin map inputs sit inside the existing form card rather than becoming a separate page surface. The map loads client-only, imports Leaflet CSS beside the map component, keeps OSM attribution visible, uses scoped token-based marker/control styling for light and dark themes, and pairs full-width mobile search/location buttons with compact helper text that wraps safely in LTR and RTL layouts. Search results use a bounded, scrollable list so long place names do not stretch the form.
+
+### Admin Event Details
+
+File: src/components/admin/admin-event-detail-client.tsx, src/components/admin/admin-event-location-map.tsx
+Last updated: 2026-07-05
+
+| Property         | Class           |
+| ---------------- | --------------- |
+| Background       | `bg-surface-elevated`, `bg-surface`, `bg-surface-subtle` |
+| Border           | `border border-border`, `border-border-strong`, tone borders such as `border-danger/25` |
+| Border radius    | `rounded-lg` for cards and stat cards, `rounded-md` for tables, info items, notices, and map frame |
+| Text primary     | `text-foreground`, `text-on-primary` |
+| Text secondary   | `text-text-muted`, `text-text-subtle` |
+| Spacing          | `gap-4`, `gap-3`, `p-4 sm:p-5`, stat padding `px-4 py-4`, info item padding `px-3 py-3` |
+| Hover state      | `hover:bg-surface-subtle`, `hover:bg-primary-hover` |
+| Shadow           | `shadow-[var(--shadow-sm)]` |
+| Accent usage     | Status badges use semantic tones; map marker and radius circle use `--primary` |
+
+**Pattern notes:**
+Admin detail pages compose compact dashboard cards with `dl` info grids so localized labels and coordinates wrap without overflow. Employee status uses mobile cards below `lg` and a contained desktop table with `min-w` inside `overflow-x-auto`. The location map is read-only, client-only, and visually matches the editable map without search/current-location controls.

@@ -121,6 +121,8 @@ export type AdminEventSummary = {
   id: string;
   name: string;
   locationName: string | null;
+  latitude: number;
+  longitude: number;
   startsAt: string;
   endsAt: string;
   status?: EventStatus;
@@ -138,6 +140,8 @@ export type AdminEventListItem = Required<
     | "id"
     | "name"
     | "locationName"
+    | "latitude"
+    | "longitude"
     | "startsAt"
     | "endsAt"
     | "status"
@@ -249,6 +253,8 @@ const adminEventSummarySelect = {
   id: true,
   title: true,
   locationName: true,
+  latitude: true,
+  longitude: true,
   startsAt: true,
   endsAt: true,
   radiusMeters: true,
@@ -390,6 +396,8 @@ function toAdminEventSummary(event: SelectedAdminEventSummary): AdminEventSummar
     id: event.id,
     name: event.title,
     locationName: event.locationName,
+    latitude: event.latitude.toNumber(),
+    longitude: event.longitude.toNumber(),
     startsAt: event.startsAt.toISOString(),
     endsAt: event.endsAt.toISOString(),
     radiusMeters: event.radiusMeters,
@@ -404,6 +412,8 @@ function toAdminEventListItem(event: SelectedAdminEventListItem): AdminEventList
     id: event.id,
     name: event.title,
     locationName: event.locationName,
+    latitude: event.latitude.toNumber(),
+    longitude: event.longitude.toNumber(),
     startsAt: event.startsAt.toISOString(),
     endsAt: event.endsAt.toISOString(),
     status: event.status,

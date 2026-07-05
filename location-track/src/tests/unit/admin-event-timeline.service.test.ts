@@ -307,6 +307,8 @@ test("admin can view event timeline through the route handler", async () => {
           id: eventId,
           name: "Warehouse Audit",
           locationName: "Amman Warehouse",
+          latitude: 31.9539,
+          longitude: 35.9106,
           startsAt: event.startsAt.toISOString(),
           endsAt: event.endsAt.toISOString(),
           radiusMeters: 90,
