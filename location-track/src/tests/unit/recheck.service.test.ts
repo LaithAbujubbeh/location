@@ -5,6 +5,7 @@ import {
   AssignmentStatus,
   DeviceStatus,
   ProofStatus,
+  ProofType,
   RecheckStatus,
 } from "@prisma/client";
 
@@ -15,9 +16,16 @@ import {
   hashRecheckToken,
   RecheckServiceError,
   scheduleRechecksForAssignment,
+  submitEmployeeRecheckSlotProofInTransaction,
   validateRecheckSubmissionAccess,
   validateRecheckTokenState,
 } from "../../services/recheck.service.ts";
+
+function decimal(value: number) {
+  return {
+    toNumber: () => value,
+  };
+}
 
 test("hashes tokens and compares them without storing the raw token", () => {
   const rawToken = "raw-token-for-test";
@@ -286,6 +294,109 @@ test("trusted device is required for recheck submission", () => {
       }),
     assertRecheckError("DEVICE_NOT_TRUSTED"),
   );
+});
+
+test("employee submits assigned recheck by event slot without a raw token", async () => {
+  let findFirstWhere: unknown = null;
+  let proofCreated = false;
+  const now = new Date("2026-07-10T12:00:00.000Z");
+  const recheck = {
+    id: "recheck_1",
+    assignmentId: "assignment_1",
+    employeeId: "employee_1",
+    tokenHash: null,
+    status: RecheckStatus.ACTIVE,
+    startsAt: new Date("2026-07-10T11:55:00.000Z"),
+    expiresAt: new Date("2026-07-10T12:10:00.000Z"),
+    submittedAt: null,
+    completedAt: null,
+    assignment: {
+      id: "assignment_1",
+      employeeId: "employee_1",
+      status: AssignmentStatus.IN_PROGRESS,
+      failureReason: null,
+      event: {
+        title: "Warehouse Audit",
+        locationName: "Amman Warehouse",
+        latitude: decimal(31.9711),
+        longitude: decimal(35.9078),
+        radiusMeters: 75,
+        photoRequired: false,
+      },
+    },
+  };
+  const tx = {
+    eventRecheck: {
+      findFirst: async ({ where }: { where: unknown }) => {
+        findFirstWhere = where;
+
+        return recheck;
+      },
+      updateMany: async () => ({ count: 1 }),
+    },
+    userDevice: {
+      findUnique: async () => ({
+        id: "device_1",
+        status: DeviceStatus.TRUSTED,
+      }),
+      update: async () => ({ id: "device_1" }),
+    },
+    eventProof: {
+      create: async () => {
+        proofCreated = true;
+
+        return {
+          id: "proof_1",
+          type: ProofType.RECHECK,
+          status: ProofStatus.ACCEPTED,
+          latitude: decimal(31.9711),
+          longitude: decimal(35.9078),
+          accuracyMeters: 25,
+          distanceMeters: 0,
+          gpsTimestamp: now,
+          deviceId: "00000000-0000-4000-8000-000000000001",
+          photoUrl: null,
+          rejectionCode: null,
+          notes: null,
+          createdAt: now,
+        };
+      },
+    },
+    eventAssignment: {
+      findUniqueOrThrow: async () => ({
+        id: "assignment_1",
+        status: AssignmentStatus.IN_PROGRESS,
+        failureReason: null,
+      }),
+    },
+  };
+
+  const result = await submitEmployeeRecheckSlotProofInTransaction(tx as never, {
+    eventId: "event_1",
+    slotId: "slot_1",
+    employeeId: "employee_1",
+    now,
+    input: {
+      latitude: 31.9711,
+      longitude: 35.9078,
+      accuracyMeters: 25,
+      gpsTimestamp: now,
+      deviceId: "00000000-0000-4000-8000-000000000001",
+      photoUrl: null,
+    },
+  });
+
+  assert.deepEqual(findFirstWhere, {
+    employeeId: "employee_1",
+    slotId: "slot_1",
+    assignment: {
+      employeeId: "employee_1",
+      eventId: "event_1",
+    },
+  });
+  assert.equal(proofCreated, true);
+  assert.equal(result.recheck.status, RecheckStatus.PASSED);
+  assert.equal(result.proof.status, ProofStatus.ACCEPTED);
 });
 
 test("inside radius with good accuracy passes recheck", () => {

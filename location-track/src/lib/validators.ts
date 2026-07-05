@@ -202,6 +202,11 @@ export const eventRouteParamsSchema = z.object({
   eventId: z.string().trim().min(1),
 });
 
+export const employeeRecheckRouteParamsSchema = z.object({
+  eventId: z.string().trim().min(1),
+  slotId: z.string().trim().min(1),
+});
+
 export const recheckRouteParamsSchema = z.object({
   token: z.string().trim().min(16).max(512),
 });

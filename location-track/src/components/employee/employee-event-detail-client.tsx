@@ -101,18 +101,6 @@ function ActionLink({
   );
 }
 
-function DisabledAction({ label }: { label: string }) {
-  return (
-    <button
-      className="inline-flex min-h-11 w-full min-w-0 cursor-not-allowed items-center justify-center rounded-md border border-border bg-surface-subtle px-4 py-2 text-center text-sm font-medium leading-tight text-text-muted sm:w-auto"
-      disabled
-      type="button"
-    >
-      {label}
-    </button>
-  );
-}
-
 function RecheckSlotRow({
   labels,
   locale,
@@ -240,7 +228,10 @@ function DetailContent({
               />
             ) : null}
             {actionableRecheck ? (
-              <DisabledAction label={labels.actions.submitRecheck} />
+              <ActionLink
+                href={`/${locale}/employee/events/${item.event.id}/recheck`}
+                label={labels.actions.submitRecheck}
+              />
             ) : null}
             {canCheckOut(item) ? (
               <ActionLink

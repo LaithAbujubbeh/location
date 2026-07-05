@@ -138,6 +138,40 @@ export type SubmitRecheckProofResult = {
   };
 };
 
+const recheckSubmitSelect = {
+  id: true,
+  assignmentId: true,
+  employeeId: true,
+  tokenHash: true,
+  status: true,
+  startsAt: true,
+  expiresAt: true,
+  submittedAt: true,
+  completedAt: true,
+  assignment: {
+    select: {
+      id: true,
+      employeeId: true,
+      status: true,
+      failureReason: true,
+      event: {
+        select: {
+          title: true,
+          locationName: true,
+          latitude: true,
+          longitude: true,
+          radiusMeters: true,
+          photoRequired: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.EventRecheckSelect;
+
+type SelectedRecheckForSubmit = Prisma.EventRecheckGetPayload<{
+  select: typeof recheckSubmitSelect;
+}>;
+
 export function generateRecheckToken() {
   return randomBytes(RECHECK_TOKEN_BYTES).toString("base64url");
 }
@@ -194,6 +228,16 @@ export function validateRecheckTokenState({
     );
   }
 
+  validateRecheckOpenState({ recheck, now });
+}
+
+function validateRecheckOpenState({
+  recheck,
+  now,
+}: {
+  recheck: RecheckTokenState;
+  now: Date;
+}) {
   if (isRecheckAlreadySubmitted(recheck)) {
     throw new RecheckServiceError(
       409,
@@ -219,20 +263,18 @@ export function validateRecheckTokenState({
   }
 }
 
-export function validateRecheckSubmissionAccess({
-  rawToken,
+function validateAuthenticatedRecheckSubmissionAccess({
   recheck,
   employeeId,
   deviceStatus,
   now,
 }: {
-  rawToken: string;
   recheck: RecheckSubmissionState;
   employeeId: string;
   deviceStatus: DeviceStatus | null;
   now: Date;
 }) {
-  validateRecheckTokenState({ rawToken, recheck, now });
+  validateRecheckOpenState({ recheck, now });
 
   if (
     recheck.employeeId !== employeeId ||
@@ -263,6 +305,28 @@ export function validateRecheckSubmissionAccess({
       "This device is not trusted for recheck submission.",
     );
   }
+}
+
+export function validateRecheckSubmissionAccess({
+  rawToken,
+  recheck,
+  employeeId,
+  deviceStatus,
+  now,
+}: {
+  rawToken: string;
+  recheck: RecheckSubmissionState;
+  employeeId: string;
+  deviceStatus: DeviceStatus | null;
+  now: Date;
+}) {
+  validateRecheckTokenState({ rawToken, recheck, now });
+  validateAuthenticatedRecheckSubmissionAccess({
+    recheck,
+    employeeId,
+    deviceStatus,
+    now,
+  });
 }
 
 export function decideRecheckProof({
@@ -492,6 +556,33 @@ export async function submitRecheckProof({
   );
 }
 
+export async function submitEmployeeRecheckSlotProof({
+  eventId,
+  slotId,
+  session,
+  input,
+  now = new Date(),
+}: {
+  eventId: string;
+  slotId: string;
+  session: AuthenticatedSession;
+  input: RecheckSubmitPayloadInput;
+  now?: Date;
+}): Promise<SubmitRecheckProofResult> {
+  const { prisma } = await import("../lib/prisma.ts");
+  const employeeId = assertEmployeeSession(session);
+
+  return prisma.$transaction((tx) =>
+    submitEmployeeRecheckSlotProofInTransaction(tx, {
+      eventId,
+      slotId,
+      employeeId,
+      input,
+      now,
+    }),
+  );
+}
+
 export async function submitRecheckProofInTransaction(
   tx: Prisma.TransactionClient,
   {
@@ -511,35 +602,7 @@ export async function submitRecheckProofInTransaction(
     where: {
       tokenHash,
     },
-    select: {
-      id: true,
-      assignmentId: true,
-      employeeId: true,
-      tokenHash: true,
-      status: true,
-      startsAt: true,
-      expiresAt: true,
-      submittedAt: true,
-      completedAt: true,
-      assignment: {
-        select: {
-          id: true,
-          employeeId: true,
-          status: true,
-          failureReason: true,
-          event: {
-            select: {
-              title: true,
-              locationName: true,
-              latitude: true,
-              longitude: true,
-              radiusMeters: true,
-              photoRequired: true,
-            },
-          },
-        },
-      },
-    },
+    select: recheckSubmitSelect,
   });
 
   if (!recheck) {
@@ -550,17 +613,75 @@ export async function submitRecheckProofInTransaction(
     );
   }
 
-  if (
-    recheck.employeeId !== employeeId ||
-    recheck.assignment.employeeId !== employeeId
-  ) {
+  return submitSelectedRecheckProofInTransaction(tx, {
+    recheck,
+    employeeId,
+    input,
+    now,
+    rawToken: token,
+  });
+}
+
+export async function submitEmployeeRecheckSlotProofInTransaction(
+  tx: Prisma.TransactionClient,
+  {
+    eventId,
+    slotId,
+    employeeId,
+    input,
+    now,
+  }: {
+    eventId: string;
+    slotId: string;
+    employeeId: string;
+    input: RecheckSubmitPayloadInput;
+    now: Date;
+  },
+): Promise<SubmitRecheckProofResult> {
+  const recheck = await tx.eventRecheck.findFirst({
+    where: {
+      employeeId,
+      slotId,
+      assignment: {
+        employeeId,
+        eventId,
+      },
+    },
+    select: recheckSubmitSelect,
+  });
+
+  if (!recheck) {
     throw new RecheckServiceError(
-      403,
-      "RECHECK_NOT_ASSIGNED",
-      "This recheck does not belong to the current employee.",
+      404,
+      "RECHECK_NOT_FOUND",
+      "Recheck was not found for this employee event.",
     );
   }
 
+  return submitSelectedRecheckProofInTransaction(tx, {
+    recheck,
+    employeeId,
+    input,
+    now,
+  });
+}
+
+async function submitSelectedRecheckProofInTransaction(
+  tx: Prisma.TransactionClient,
+  {
+    recheck,
+    employeeId,
+    input,
+    now,
+    rawToken,
+  }: {
+    recheck: SelectedRecheckForSubmit;
+    employeeId: string;
+    input: RecheckSubmitPayloadInput;
+    now: Date;
+    rawToken?: string;
+  },
+): Promise<SubmitRecheckProofResult> {
   const trustedDevice = await tx.userDevice.findUnique({
     where: {
       userId_deviceId: {
@@ -574,13 +695,22 @@ export async function submitRecheckProofInTransaction(
     },
   });
 
-  validateRecheckSubmissionAccess({
-    rawToken: token,
-    recheck,
-    employeeId,
-    deviceStatus: trustedDevice?.status ?? null,
-    now,
-  });
+  if (rawToken) {
+    validateRecheckSubmissionAccess({
+      rawToken,
+      recheck,
+      employeeId,
+      deviceStatus: trustedDevice?.status ?? null,
+      now,
+    });
+  } else {
+    validateAuthenticatedRecheckSubmissionAccess({
+      recheck,
+      employeeId,
+      deviceStatus: trustedDevice?.status ?? null,
+      now,
+    });
+  }
 
   if (!trustedDevice) {
     throw new RecheckServiceError(

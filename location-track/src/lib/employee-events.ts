@@ -18,6 +18,7 @@ export const employeeEventQueryKeys = {
   employeeEventDetails: (eventId: string) =>
     ["employeeEventDetails", eventId] as const,
   employeeEvents: () => ["employeeEvents"] as const,
+  recheckDetails: (eventId: string) => ["recheckDetails", eventId] as const,
 };
 
 export type EmployeeEventRecheckSlot = {
@@ -74,6 +75,8 @@ export type EmployeeCheckInPayload = {
   photoUrl?: string;
 };
 
+export type EmployeeRecheckSubmitPayload = EmployeeCheckInPayload;
+
 export type EmployeeCheckInResult = {
   assignment: {
     id: string;
@@ -101,6 +104,23 @@ export type EmployeeCheckInResult = {
     radiusMeters: number;
     gpsAgeMs: number;
   };
+};
+
+export type EmployeeRecheckSubmitResult = {
+  assignment: {
+    id: string;
+    status: AssignmentStatus;
+    failureReason: string | null;
+  };
+  recheck: {
+    id: string;
+    status: RecheckStatus;
+    startsAt: string;
+    expiresAt: string;
+    submittedAt: string;
+  };
+  proof: EmployeeCheckInResult["proof"];
+  verification: EmployeeCheckInResult["verification"];
 };
 
 type ApiBody<T> = ApiSuccessBody<T> | ApiErrorBody;
@@ -164,6 +184,40 @@ export async function submitEmployeeCheckIn({
     },
   );
   const body = (await response.json()) as ApiBody<EmployeeCheckInResult>;
+
+  if (!response.ok || !body.ok) {
+    const error = body.ok
+      ? { code: "REQUEST_FAILED", message: "Request failed." }
+      : body.error;
+
+    throw new EmployeeEventApiError(error.code, error.message, response.status);
+  }
+
+  return body.data;
+}
+
+export async function submitEmployeeRecheck({
+  eventId,
+  payload,
+  slotId,
+}: {
+  eventId: string;
+  slotId: string;
+  payload: EmployeeRecheckSubmitPayload;
+}) {
+  const response = await fetch(
+    `/api/employee/events/${encodeURIComponent(eventId)}/rechecks/${encodeURIComponent(slotId)}/submit`,
+    {
+      method: "POST",
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+  const body = (await response.json()) as ApiBody<EmployeeRecheckSubmitResult>;
 
   if (!response.ok || !body.ok) {
     const error = body.ok

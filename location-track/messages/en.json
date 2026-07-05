@@ -209,6 +209,113 @@
         "suspiciousDescription": "Attendance has started, but this proof needs review.",
         "title": "Check-in submitted"
       }
+    },
+    "recheck": {
+      "title": "Submit recheck",
+      "description": "Confirm the active recheck with a fresh GPS location and device proof.",
+      "backToEvent": "Back to event details",
+      "noLocation": "Location not specified",
+      "noRecheck": "No recheck available",
+      "meters": "meters",
+      "devicePending": "Preparing device ID",
+      "emptyLocation": "Capture your current location before reviewing GPS accuracy.",
+      "detailsErrorTitle": "Recheck details could not be loaded",
+      "detailsErrorDescription": "Refresh the page or return to your event details.",
+      "countdown": {
+        "title": "Recheck window",
+        "startsIn": "Starts in",
+        "expiresIn": "Expires in",
+        "expired": "This recheck window has expired."
+      },
+      "steps": {
+        "confirmTitle": "Confirm active recheck",
+        "confirmDescription": "Review the event, location, and current recheck window.",
+        "locationTitle": "Get current location",
+        "locationDescription": "Use your browser GPS with high accuracy enabled.",
+        "reviewTitle": "Review location accuracy",
+        "reviewDescription": "Confirm the captured coordinates, accuracy, and timestamp.",
+        "photoTitle": "Add photo proof",
+        "photoDescription": "Photo proof is only available after an upload provider is configured.",
+        "submitTitle": "Submit recheck",
+        "submitDescription": "Send this GPS proof to the secure recheck endpoint."
+      },
+      "stepStatus": {
+        "pending": "Pending",
+        "ready": "Ready",
+        "complete": "Complete",
+        "blocked": "Blocked"
+      },
+      "fields": {
+        "accuracyMeters": "Accuracy",
+        "capturedAt": "Captured",
+        "deviceId": "Device ID",
+        "distanceMeters": "Distance",
+        "event": "Event",
+        "latitude": "Latitude",
+        "location": "Location",
+        "longitude": "Longitude",
+        "photoRequirement": "Photo proof",
+        "proofStatus": "Proof status",
+        "radius": "Allowed radius",
+        "recheckStatus": "Recheck status",
+        "recheckWindow": "Recheck time",
+        "submittedAt": "Submitted"
+      },
+      "photo": {
+        "required": "Required",
+        "notRequired": "Not required",
+        "notConfiguredOptional": "Photo upload is not configured yet. This event does not require photo proof, so you can continue without it."
+      },
+      "warnings": {
+        "alreadySubmitted": "This recheck has already been submitted.",
+        "assignmentNotInProgress": "You must be checked in before submitting a recheck.",
+        "expired": "This recheck has expired.",
+        "locationRequired": "Capture your current location before submitting.",
+        "noRecheck": "There is no planned recheck available for this event.",
+        "notActiveYet": "This recheck is not active yet.",
+        "photoUploadNotConfigured": "Photo upload is not configured yet.",
+        "poorAccuracy": "GPS accuracy is poor. The backend may mark this proof as suspicious or reject it."
+      },
+      "locationErrors": {
+        "PERMISSION_DENIED": "Location permission was denied. Allow location access in your browser and try again.",
+        "POSITION_UNAVAILABLE": "Location is unavailable. Check GPS, Wi-Fi, or mobile location services and try again.",
+        "TIMEOUT": "Location capture timed out. Move near a window or open area and try again.",
+        "UNSUPPORTED": "This browser does not support geolocation.",
+        "UNKNOWN": "Location could not be captured. Try again."
+      },
+      "backendErrors": {
+        "ASSIGNMENT_NOT_IN_PROGRESS": "You must be checked in before submitting this recheck.",
+        "DEVICE_NOT_TRUSTED": "This device is not trusted yet. Ask an admin to approve it before submitting a recheck.",
+        "FORBIDDEN": "You do not have permission to submit this recheck.",
+        "PHOTO_REQUIRED": "Photo proof is required.",
+        "RECHECK_ALREADY_SUBMITTED": "This recheck has already been submitted.",
+        "RECHECK_EXPIRED": "This recheck has expired.",
+        "RECHECK_NOT_ACTIVE": "This recheck is not active right now.",
+        "RECHECK_NOT_ASSIGNED": "This recheck is not assigned to your account.",
+        "RECHECK_NOT_FOUND": "Recheck was not found for this event.",
+        "REQUEST_FAILED": "Recheck submission failed.",
+        "UNAUTHORIZED": "Sign in again before submitting a recheck.",
+        "VALIDATION_ERROR": "The submitted recheck data was not accepted."
+      },
+      "errors": {
+        "deviceUnavailable": "Device ID could not be prepared in this browser.",
+        "missingLocationOrDevice": "Location and device ID are required before recheck submission.",
+        "unknownSubmitError": "Recheck could not be submitted. Try again."
+      },
+      "actions": {
+        "backToDetails": "Back to event details",
+        "getLocation": "Get current location",
+        "refreshLocation": "Refresh location",
+        "retry": "Try again",
+        "submit": "Submit recheck",
+        "submitting": "Submitting"
+      },
+      "result": {
+        "acceptedDescription": "Your recheck was accepted.",
+        "rejectedDescription": "The proof was recorded, but this recheck did not pass.",
+        "suspiciousDescription": "Your recheck was submitted and needs review.",
+        "title": "Recheck submitted"
+      }
     }
   },
   "status": {

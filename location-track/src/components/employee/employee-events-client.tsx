@@ -67,7 +67,7 @@ function getPrimaryAction(
 
   if (findActionableRecheckSlot(item.event.recheckSlots)) {
     return {
-      href: `/${locale}/employee/events/${item.event.id}`,
+      href: `/${locale}/employee/events/${item.event.id}/recheck`,
       label: labels.actions.viewRecheck,
     };
   }

@@ -209,6 +209,113 @@
         "suspiciousDescription": "بدأ الحضور، لكن هذا الإثبات يحتاج إلى مراجعة.",
         "title": "تم إرسال تسجيل الحضور"
       }
+    },
+    "recheck": {
+      "title": "إرسال إعادة التحقق",
+      "description": "أكد إعادة التحقق النشطة بموقع GPS حديث وإثبات الجهاز.",
+      "backToEvent": "العودة إلى تفاصيل الفعالية",
+      "noLocation": "لم يتم تحديد الموقع",
+      "noRecheck": "لا توجد إعادة تحقق متاحة",
+      "meters": "متر",
+      "devicePending": "جار تجهيز معرف الجهاز",
+      "emptyLocation": "التقط موقعك الحالي قبل مراجعة دقة GPS.",
+      "detailsErrorTitle": "تعذر تحميل تفاصيل إعادة التحقق",
+      "detailsErrorDescription": "حدث الصفحة أو عد إلى تفاصيل الفعالية.",
+      "countdown": {
+        "title": "وقت إعادة التحقق",
+        "startsIn": "تبدأ بعد",
+        "expiresIn": "تنتهي بعد",
+        "expired": "انتهى وقت إعادة التحقق هذا."
+      },
+      "steps": {
+        "confirmTitle": "تأكيد إعادة التحقق النشطة",
+        "confirmDescription": "راجع الفعالية والموقع ووقت إعادة التحقق الحالي.",
+        "locationTitle": "التقاط الموقع الحالي",
+        "locationDescription": "استخدم GPS من المتصفح مع تفعيل الدقة العالية.",
+        "reviewTitle": "مراجعة دقة الموقع",
+        "reviewDescription": "تأكد من الإحداثيات والدقة ووقت الالتقاط.",
+        "photoTitle": "إضافة إثبات الصورة",
+        "photoDescription": "إثبات الصورة متاح فقط بعد إعداد مزود رفع الصور.",
+        "submitTitle": "إرسال إعادة التحقق",
+        "submitDescription": "أرسل إثبات GPS هذا إلى نقطة إعادة التحقق الآمنة."
+      },
+      "stepStatus": {
+        "pending": "قيد الانتظار",
+        "ready": "جاهز",
+        "complete": "مكتمل",
+        "blocked": "محظور"
+      },
+      "fields": {
+        "accuracyMeters": "الدقة",
+        "capturedAt": "وقت الالتقاط",
+        "deviceId": "معرف الجهاز",
+        "distanceMeters": "المسافة",
+        "event": "الفعالية",
+        "latitude": "خط العرض",
+        "location": "الموقع",
+        "longitude": "خط الطول",
+        "photoRequirement": "إثبات الصورة",
+        "proofStatus": "حالة الإثبات",
+        "radius": "النطاق المسموح",
+        "recheckStatus": "حالة إعادة التحقق",
+        "recheckWindow": "وقت إعادة التحقق",
+        "submittedAt": "تم الإرسال"
+      },
+      "photo": {
+        "required": "مطلوب",
+        "notRequired": "غير مطلوب",
+        "notConfiguredOptional": "لم يتم إعداد رفع الصور بعد. هذه الفعالية لا تتطلب إثبات صورة، لذلك يمكنك المتابعة بدونه."
+      },
+      "warnings": {
+        "alreadySubmitted": "تم إرسال إعادة التحقق هذه مسبقا.",
+        "assignmentNotInProgress": "يجب تسجيل الحضور قبل إرسال إعادة التحقق.",
+        "expired": "انتهت إعادة التحقق هذه.",
+        "locationRequired": "التقط موقعك الحالي قبل الإرسال.",
+        "noRecheck": "لا توجد إعادة تحقق مخططة لهذه الفعالية.",
+        "notActiveYet": "إعادة التحقق هذه غير نشطة بعد.",
+        "photoUploadNotConfigured": "لم يتم إعداد رفع الصور بعد.",
+        "poorAccuracy": "دقة GPS ضعيفة. قد يضع الخادم هذا الإثبات قيد المراجعة أو يرفضه."
+      },
+      "locationErrors": {
+        "PERMISSION_DENIED": "تم رفض إذن الموقع. اسمح بالوصول إلى الموقع من المتصفح ثم حاول مرة أخرى.",
+        "POSITION_UNAVAILABLE": "الموقع غير متاح. تحقق من GPS أو Wi-Fi أو خدمات الموقع ثم حاول مرة أخرى.",
+        "TIMEOUT": "انتهت مهلة التقاط الموقع. اقترب من نافذة أو مكان مفتوح ثم حاول مرة أخرى.",
+        "UNSUPPORTED": "هذا المتصفح لا يدعم تحديد الموقع.",
+        "UNKNOWN": "تعذر التقاط الموقع. حاول مرة أخرى."
+      },
+      "backendErrors": {
+        "ASSIGNMENT_NOT_IN_PROGRESS": "يجب تسجيل الحضور قبل إرسال إعادة التحقق هذه.",
+        "DEVICE_NOT_TRUSTED": "هذا الجهاز غير موثوق بعد. اطلب من المدير الموافقة عليه قبل إرسال إعادة التحقق.",
+        "FORBIDDEN": "ليست لديك صلاحية إرسال إعادة التحقق هذه.",
+        "PHOTO_REQUIRED": "إثبات الصورة مطلوب.",
+        "RECHECK_ALREADY_SUBMITTED": "تم إرسال إعادة التحقق هذه مسبقا.",
+        "RECHECK_EXPIRED": "انتهت إعادة التحقق هذه.",
+        "RECHECK_NOT_ACTIVE": "إعادة التحقق هذه غير نشطة الآن.",
+        "RECHECK_NOT_ASSIGNED": "إعادة التحقق هذه غير معينة لحسابك.",
+        "RECHECK_NOT_FOUND": "لم يتم العثور على إعادة تحقق لهذه الفعالية.",
+        "REQUEST_FAILED": "فشل إرسال إعادة التحقق.",
+        "UNAUTHORIZED": "سجل الدخول مرة أخرى قبل إرسال إعادة التحقق.",
+        "VALIDATION_ERROR": "لم يتم قبول بيانات إعادة التحقق المرسلة."
+      },
+      "errors": {
+        "deviceUnavailable": "تعذر تجهيز معرف الجهاز في هذا المتصفح.",
+        "missingLocationOrDevice": "الموقع ومعرف الجهاز مطلوبان قبل إرسال إعادة التحقق.",
+        "unknownSubmitError": "تعذر إرسال إعادة التحقق. حاول مرة أخرى."
+      },
+      "actions": {
+        "backToDetails": "العودة إلى تفاصيل الفعالية",
+        "getLocation": "التقاط الموقع الحالي",
+        "refreshLocation": "تحديث الموقع",
+        "retry": "حاول مرة أخرى",
+        "submit": "إرسال إعادة التحقق",
+        "submitting": "جار الإرسال"
+      },
+      "result": {
+        "acceptedDescription": "تم قبول إعادة التحقق.",
+        "rejectedDescription": "تم تسجيل الإثبات، لكن إعادة التحقق لم تنجح.",
+        "suspiciousDescription": "تم إرسال إعادة التحقق وتحتاج إلى مراجعة.",
+        "title": "تم إرسال إعادة التحقق"
+      }
     }
   },
   "status": {
