@@ -18,6 +18,12 @@ import {
 } from "../lib/geo.ts";
 import type { AuthenticatedSession } from "../lib/permissions.ts";
 import type { RecheckSubmitPayloadInput } from "../lib/validators.ts";
+import {
+  checkTrustedUserDeviceForAction,
+  DeviceServiceError,
+  type DeviceTrustRejection,
+  requireTrustedUserDeviceForAction,
+} from "./device.service.ts";
 
 const RECHECK_TOKEN_BYTES = 32;
 
@@ -136,6 +142,25 @@ export type SubmitRecheckProofResult = {
     radiusMeters: number;
     gpsAgeMs: number;
   };
+};
+
+type RecheckProofTransactionArgs = {
+  employeeId: string;
+  input: RecheckSubmitPayloadInput;
+  now: Date;
+  persistDeviceRejection?: boolean;
+  token: string;
+  userAgent?: string | null;
+};
+
+type EmployeeRecheckSlotProofTransactionArgs = {
+  employeeId: string;
+  eventId: string;
+  input: RecheckSubmitPayloadInput;
+  now: Date;
+  persistDeviceRejection?: boolean;
+  slotId: string;
+  userAgent?: string | null;
 };
 
 const recheckSubmitSelect = {
@@ -536,24 +561,34 @@ export async function submitRecheckProof({
   token,
   session,
   input,
+  userAgent,
   now = new Date(),
 }: {
   token: string;
   session: AuthenticatedSession;
   input: RecheckSubmitPayloadInput;
+  userAgent?: string | null;
   now?: Date;
 }): Promise<SubmitRecheckProofResult> {
   const { prisma } = await import("../lib/prisma.ts");
   const employeeId = assertEmployeeSession(session);
 
-  return prisma.$transaction((tx) =>
+  const result = await prisma.$transaction((tx) =>
     submitRecheckProofInTransaction(tx, {
       token,
       employeeId,
       input,
+      persistDeviceRejection: true,
+      userAgent,
       now,
     }),
   );
+
+  if ("trusted" in result) {
+    throw new RecheckServiceError(result.status, result.code, result.message);
+  }
+
+  return result;
 }
 
 export async function submitEmployeeRecheckSlotProof({
@@ -561,27 +596,47 @@ export async function submitEmployeeRecheckSlotProof({
   slotId,
   session,
   input,
+  userAgent,
   now = new Date(),
 }: {
   eventId: string;
   slotId: string;
   session: AuthenticatedSession;
   input: RecheckSubmitPayloadInput;
+  userAgent?: string | null;
   now?: Date;
 }): Promise<SubmitRecheckProofResult> {
   const { prisma } = await import("../lib/prisma.ts");
   const employeeId = assertEmployeeSession(session);
 
-  return prisma.$transaction((tx) =>
+  const result = await prisma.$transaction((tx) =>
     submitEmployeeRecheckSlotProofInTransaction(tx, {
       eventId,
       slotId,
       employeeId,
       input,
+      persistDeviceRejection: true,
+      userAgent,
       now,
     }),
   );
+
+  if ("trusted" in result) {
+    throw new RecheckServiceError(result.status, result.code, result.message);
+  }
+
+  return result;
 }
+
+export async function submitRecheckProofInTransaction(
+  tx: Prisma.TransactionClient,
+  args: RecheckProofTransactionArgs & { persistDeviceRejection: true },
+): Promise<SubmitRecheckProofResult | DeviceTrustRejection>;
+
+export async function submitRecheckProofInTransaction(
+  tx: Prisma.TransactionClient,
+  args: RecheckProofTransactionArgs,
+): Promise<SubmitRecheckProofResult>;
 
 export async function submitRecheckProofInTransaction(
   tx: Prisma.TransactionClient,
@@ -589,14 +644,11 @@ export async function submitRecheckProofInTransaction(
     token,
     employeeId,
     input,
+    persistDeviceRejection = false,
+    userAgent,
     now,
-  }: {
-    token: string;
-    employeeId: string;
-    input: RecheckSubmitPayloadInput;
-    now: Date;
-  },
-): Promise<SubmitRecheckProofResult> {
+  }: RecheckProofTransactionArgs,
+): Promise<SubmitRecheckProofResult | DeviceTrustRejection> {
   const tokenHash = hashRecheckToken(token);
   const recheck = await tx.eventRecheck.findUnique({
     where: {
@@ -617,10 +669,24 @@ export async function submitRecheckProofInTransaction(
     recheck,
     employeeId,
     input,
+    persistDeviceRejection,
+    userAgent,
     now,
     rawToken: token,
   });
 }
+
+export async function submitEmployeeRecheckSlotProofInTransaction(
+  tx: Prisma.TransactionClient,
+  args: EmployeeRecheckSlotProofTransactionArgs & {
+    persistDeviceRejection: true;
+  },
+): Promise<SubmitRecheckProofResult | DeviceTrustRejection>;
+
+export async function submitEmployeeRecheckSlotProofInTransaction(
+  tx: Prisma.TransactionClient,
+  args: EmployeeRecheckSlotProofTransactionArgs,
+): Promise<SubmitRecheckProofResult>;
 
 export async function submitEmployeeRecheckSlotProofInTransaction(
   tx: Prisma.TransactionClient,
@@ -629,15 +695,11 @@ export async function submitEmployeeRecheckSlotProofInTransaction(
     slotId,
     employeeId,
     input,
+    persistDeviceRejection = false,
+    userAgent,
     now,
-  }: {
-    eventId: string;
-    slotId: string;
-    employeeId: string;
-    input: RecheckSubmitPayloadInput;
-    now: Date;
-  },
-): Promise<SubmitRecheckProofResult> {
+  }: EmployeeRecheckSlotProofTransactionArgs,
+): Promise<SubmitRecheckProofResult | DeviceTrustRejection> {
   const recheck = await tx.eventRecheck.findFirst({
     where: {
       employeeId,
@@ -662,6 +724,8 @@ export async function submitEmployeeRecheckSlotProofInTransaction(
     recheck,
     employeeId,
     input,
+    persistDeviceRejection,
+    userAgent,
     now,
   });
 }
@@ -672,65 +736,64 @@ async function submitSelectedRecheckProofInTransaction(
     recheck,
     employeeId,
     input,
+    persistDeviceRejection,
+    userAgent,
     now,
     rawToken,
   }: {
     recheck: SelectedRecheckForSubmit;
     employeeId: string;
     input: RecheckSubmitPayloadInput;
+    persistDeviceRejection?: boolean;
+    userAgent?: string | null;
     now: Date;
     rawToken?: string;
   },
-): Promise<SubmitRecheckProofResult> {
-  const trustedDevice = await tx.userDevice.findUnique({
-    where: {
-      userId_deviceId: {
-        userId: employeeId,
-        deviceId: input.deviceId,
-      },
-    },
-    select: {
-      id: true,
-      status: true,
-    },
-  });
-
+): Promise<SubmitRecheckProofResult | DeviceTrustRejection> {
   if (rawToken) {
     validateRecheckSubmissionAccess({
       rawToken,
       recheck,
       employeeId,
-      deviceStatus: trustedDevice?.status ?? null,
+      deviceStatus: DeviceStatus.TRUSTED,
       now,
     });
   } else {
     validateAuthenticatedRecheckSubmissionAccess({
       recheck,
       employeeId,
-      deviceStatus: trustedDevice?.status ?? null,
+      deviceStatus: DeviceStatus.TRUSTED,
       now,
     });
   }
 
-  if (!trustedDevice) {
-    throw new RecheckServiceError(
-      403,
-      "DEVICE_NOT_TRUSTED",
-      "This device is not trusted for recheck submission.",
-    );
-  }
+  if (persistDeviceRejection) {
+    const deviceResult = await checkTrustedUserDeviceForAction(tx, {
+      userId: employeeId,
+      deviceId: input.deviceId,
+      userAgent,
+      now,
+    });
 
-  await tx.userDevice.update({
-    where: {
-      id: trustedDevice.id,
-    },
-    data: {
-      lastSeenAt: now,
-    },
-    select: {
-      id: true,
-    },
-  });
+    if (!deviceResult.trusted) {
+      return deviceResult;
+    }
+  } else {
+    try {
+      await requireTrustedUserDeviceForAction(tx, {
+        userId: employeeId,
+        deviceId: input.deviceId,
+        userAgent,
+        now,
+      });
+    } catch (error) {
+      if (error instanceof DeviceServiceError) {
+        throw new RecheckServiceError(error.status, error.code, error.message);
+      }
+
+      throw error;
+    }
+  }
 
   const eventPoint = {
     latitude: recheck.assignment.event.latitude.toNumber(),

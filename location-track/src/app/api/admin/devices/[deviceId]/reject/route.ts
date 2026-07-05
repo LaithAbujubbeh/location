@@ -1,18 +1,22 @@
 import type { ZodError } from "zod";
 
-import { apiError, apiSuccess } from "@/lib/api-response";
-import { privateNoStoreHeaders } from "@/lib/cache";
-import { PermissionError, requireAdmin } from "@/lib/permissions";
+import { apiError, apiSuccess } from "../../../../../../lib/api-response.ts";
+import { privateNoStoreHeaders } from "../../../../../../lib/cache.ts";
+import {
+  PermissionError,
+  requireAdmin,
+} from "../../../../../../lib/permissions.ts";
 import {
   consumeUserRateLimit,
   rateLimitPolicies,
   rateLimitResponse,
-} from "@/lib/rate-limit";
-import { deviceRouteParamsSchema } from "@/lib/validators";
+} from "../../../../../../lib/rate-limit.ts";
+import { deviceRouteParamsSchema } from "../../../../../../lib/validators.ts";
 import {
   DeviceServiceError,
   rejectUserDevice,
-} from "@/services/device.service";
+  type DeviceRecord,
+} from "../../../../../../services/device.service.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +24,21 @@ type DeviceRouteContext = {
   params: Promise<{
     deviceId: string;
   }>;
+};
+
+type AdminDeviceRejectDeps = {
+  consumeRateLimit: typeof consumeUserRateLimit;
+  rejectDevice: (input: {
+    userDeviceId: string;
+    reviewedByUserId: string;
+  }) => Promise<DeviceRecord>;
+  requireAdminSession: typeof requireAdmin;
+};
+
+const defaultDeps: AdminDeviceRejectDeps = {
+  consumeRateLimit: consumeUserRateLimit,
+  rejectDevice: rejectUserDevice,
+  requireAdminSession: requireAdmin,
 };
 
 function formatValidationError(error: ZodError) {
@@ -31,10 +50,14 @@ function formatValidationError(error: ZodError) {
     .join("; ");
 }
 
-export async function POST(_request: Request, context: DeviceRouteContext) {
+export async function handleAdminRejectDeviceRequest(
+  _request: Request,
+  context: DeviceRouteContext,
+  deps: AdminDeviceRejectDeps = defaultDeps,
+) {
   try {
-    const adminSession = await requireAdmin();
-    const rateLimit = await consumeUserRateLimit({
+    const adminSession = await deps.requireAdminSession();
+    const rateLimit = await deps.consumeRateLimit({
       policy: rateLimitPolicies.adminDeviceReview,
       userId: adminSession.user.id,
     });
@@ -59,7 +82,7 @@ export async function POST(_request: Request, context: DeviceRouteContext) {
       );
     }
 
-    const device = await rejectUserDevice({
+    const device = await deps.rejectDevice({
       userDeviceId: parsed.data.deviceId,
       reviewedByUserId: adminSession.user.id,
     });
@@ -86,4 +109,8 @@ export async function POST(_request: Request, context: DeviceRouteContext) {
       headers: privateNoStoreHeaders,
     });
   }
+}
+
+export async function POST(request: Request, context: DeviceRouteContext) {
+  return handleAdminRejectDeviceRequest(request, context);
 }

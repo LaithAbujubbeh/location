@@ -1,10 +1,16 @@
 "use client";
 
-import type { AssignmentStatus } from "@prisma/client";
+import type { AssignmentStatus, EventStatus } from "@prisma/client";
 import { useMemo, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,12 +25,17 @@ import { Input } from "@/components/ui/input";
 import {
   adminEventQueryKeys,
   adminEventQueryOptions,
+  deleteAdminEvent,
   fetchAdminEventEmployees,
   fetchAdminEventTimeline,
   formatDateRange,
   formatDateTime,
+  updateAdminEvent,
+  AdminEventApiError,
   type AdminAssignmentSummary,
+  type AdminEventSummary,
   type AdminEventTimelineAssignment,
+  type AdminUpdateEventPayload,
 } from "@/lib/admin-events";
 import type { Locale, Messages } from "@/lib/i18n";
 
@@ -60,6 +71,14 @@ const assignmentStatuses: Array<AssignmentStatus | ""> = [
   "MISSED",
 ];
 
+const eventStatuses: EventStatus[] = [
+  "DRAFT",
+  "SCHEDULED",
+  "ACTIVE",
+  "COMPLETED",
+  "CANCELLED",
+];
+
 const statusTone: Record<string, StatusTone> = {
   ACCEPTED: "success",
   ACTIVE: "primary",
@@ -77,12 +96,76 @@ const statusTone: Record<string, StatusTone> = {
   SUSPICIOUS: "warning",
 };
 
+type EditEventFormValues = {
+  name: string;
+  locationName: string;
+  latitude: string;
+  longitude: string;
+  radiusMeters: string;
+  startsAt: string;
+  endsAt: string;
+  requirePhoto: boolean;
+  requireCheckout: boolean;
+  status: EventStatus;
+};
+
+const emptyEditForm: EditEventFormValues = {
+  name: "",
+  locationName: "",
+  latitude: "",
+  longitude: "",
+  radiusMeters: "",
+  startsAt: "",
+  endsAt: "",
+  requirePhoto: false,
+  requireCheckout: true,
+  status: "SCHEDULED",
+};
+
 function getStatusLabel(status: string, labels: Messages["status"]) {
   const key = status.toLowerCase().replace(/_([a-z])/g, (_, letter: string) =>
     letter.toUpperCase(),
   ) as keyof Messages["status"];
 
   return labels[key] ?? status;
+}
+
+function toLocalDateTimeInputValue(value: string) {
+  const date = new Date(value);
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function getEventFormFromSummary(event: AdminEventSummary): EditEventFormValues {
+  return {
+    name: event.name,
+    locationName: event.locationName ?? "",
+    latitude: String(event.latitude),
+    longitude: String(event.longitude),
+    radiusMeters: String(event.radiusMeters),
+    startsAt: toLocalDateTimeInputValue(event.startsAt),
+    endsAt: toLocalDateTimeInputValue(event.endsAt),
+    requirePhoto: event.requirePhoto,
+    requireCheckout: event.requireCheckout,
+    status: event.status ?? "SCHEDULED",
+  };
+}
+
+function getEventFormSourceKey(event: AdminEventSummary) {
+  return [
+    event.id,
+    event.name,
+    event.locationName ?? "",
+    event.latitude,
+    event.longitude,
+    event.radiusMeters,
+    event.startsAt,
+    event.endsAt,
+    event.requirePhoto,
+    event.requireCheckout,
+    event.status ?? "SCHEDULED",
+  ].join("|");
 }
 
 function BooleanLabel({
@@ -187,8 +270,13 @@ export function AdminEventDetailClient({
   locale,
   statusLabels,
 }: AdminEventDetailClientProps) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<AssignmentStatus | "">("");
   const [employeeSearch, setEmployeeSearch] = useState("");
+  const [editForm, setEditForm] = useState<EditEventFormValues>(emptyEditForm);
+  const [editFormSourceKey, setEditFormSourceKey] = useState<string | null>(null);
+  const [managementError, setManagementError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
@@ -225,9 +313,71 @@ export function AdminEventDetailClient({
     placeholderData: keepPreviousData,
     ...adminEventQueryOptions,
   });
+  const updateMutation = useMutation({
+    mutationFn: (payload: AdminUpdateEventPayload) =>
+      updateAdminEvent(eventId, payload),
+    onError: (error) => {
+      if (error instanceof AdminEventApiError) {
+        setManagementError(
+          labels.backendErrors[error.code as keyof typeof labels.backendErrors] ??
+            error.message,
+        );
+        return;
+      }
+
+      setManagementError(labels.errors.unknownUpdateError);
+    },
+    onSuccess: async ({ event }) => {
+      setManagementError(null);
+      setEditForm(getEventFormFromSummary(event));
+      setEditFormSourceKey(getEventFormSourceKey(event));
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: adminEventQueryKeys.adminEvents(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: adminEventQueryKeys.adminEventEmployees(eventId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: adminEventQueryKeys.adminEventTimeline(eventId),
+        }),
+      ]);
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteAdminEvent(eventId),
+    onError: (error) => {
+      if (error instanceof AdminEventApiError) {
+        setManagementError(
+          labels.backendErrors[error.code as keyof typeof labels.backendErrors] ??
+            error.message,
+        );
+        return;
+      }
+
+      setManagementError(labels.errors.unknownDeleteError);
+    },
+    onSuccess: async () => {
+      setManagementError(null);
+      await queryClient.invalidateQueries({
+        queryKey: adminEventQueryKeys.adminEvents(),
+      });
+      router.push(`/${locale}/admin/events`);
+    },
+  });
 
   const data = employeesQuery.data;
   const timeline = timelineQuery.data;
+  const eventForForm = data?.event;
+  const nextEditFormSourceKey = eventForForm
+    ? getEventFormSourceKey(eventForForm)
+    : null;
+
+  if (eventForForm && editFormSourceKey !== nextEditFormSourceKey) {
+    setEditForm(getEventFormFromSummary(eventForForm));
+    setEditFormSourceKey(nextEditFormSourceKey);
+  }
+
   const assignmentsById = useMemo(() => {
     const records = new Map<string, AdminEventTimelineAssignment>();
 
@@ -298,6 +448,93 @@ export function AdminEventDetailClient({
   ).length;
   const failedOrMissedCount =
     (statusCounts.FAILED ?? 0) + (statusCounts.MISSED ?? 0);
+  const managementDisabled =
+    updateMutation.isPending || deleteMutation.isPending || employeesQuery.isFetching;
+
+  function updateEditForm<K extends keyof EditEventFormValues>(
+    key: K,
+    value: EditEventFormValues[K],
+  ) {
+    setEditForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  function buildUpdatePayload(
+    nextStatus = editForm.status,
+  ): AdminUpdateEventPayload | null {
+    const latitude = Number(editForm.latitude);
+    const longitude = Number(editForm.longitude);
+    const radiusMeters = Number(editForm.radiusMeters);
+
+    if (!editForm.name.trim() || !editForm.locationName.trim()) {
+      setManagementError(labels.validation.required);
+      return null;
+    }
+
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+      setManagementError(labels.validation.latitude);
+      return null;
+    }
+
+    if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+      setManagementError(labels.validation.longitude);
+      return null;
+    }
+
+    if (
+      !Number.isInteger(radiusMeters) ||
+      radiusMeters < 1 ||
+      radiusMeters > 50_000
+    ) {
+      setManagementError(labels.validation.radius);
+      return null;
+    }
+
+    const startsAtDate = new Date(editForm.startsAt);
+    const endsAtDate = new Date(editForm.endsAt);
+
+    if (Number.isNaN(startsAtDate.getTime()) || Number.isNaN(endsAtDate.getTime())) {
+      setManagementError(labels.validation.required);
+      return null;
+    }
+
+    const startsAt = startsAtDate.toISOString();
+    const endsAt = endsAtDate.toISOString();
+
+    if (new Date(endsAt) <= new Date(startsAt)) {
+      setManagementError(labels.validation.endsAfterStart);
+      return null;
+    }
+
+    return {
+      name: editForm.name.trim(),
+      locationName: editForm.locationName.trim(),
+      latitude,
+      longitude,
+      radiusMeters,
+      startsAt,
+      endsAt,
+      requirePhoto: editForm.requirePhoto,
+      requireCheckout: editForm.requireCheckout,
+      status: nextStatus,
+    };
+  }
+
+  function submitUpdate(nextStatus = editForm.status) {
+    const payload = buildUpdatePayload(nextStatus);
+
+    if (payload) {
+      updateMutation.mutate(payload);
+    }
+  }
+
+  function submitDelete() {
+    if (window.confirm(labels.deleteConfirm)) {
+      deleteMutation.mutate();
+    }
+  }
 
   return (
     <div className="grid min-w-0 gap-4">
@@ -379,6 +616,190 @@ export function AdminEventDetailClient({
           </CardContent>
         </Card>
       </div>
+
+      <Card className="overflow-hidden">
+        <CardHeader>
+          <CardTitle>{labels.sections.managementTitle}</CardTitle>
+          <CardDescription>{labels.sections.managementDescription}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="grid gap-4"
+            onSubmit={(submitEvent) => {
+              submitEvent.preventDefault();
+              submitUpdate();
+            }}
+          >
+            {managementError ? <WarningBox>{managementError}</WarningBox> : null}
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">
+                {labels.fields.name}
+                <Input
+                  disabled={managementDisabled}
+                  onChange={(inputEvent) =>
+                    updateEditForm("name", inputEvent.target.value)
+                  }
+                  required
+                  value={editForm.name}
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">
+                {labels.fields.locationName}
+                <Input
+                  disabled={managementDisabled}
+                  onChange={(inputEvent) =>
+                    updateEditForm("locationName", inputEvent.target.value)
+                  }
+                  required
+                  value={editForm.locationName}
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">
+                {labels.fields.latitude}
+                <Input
+                  disabled={managementDisabled}
+                  inputMode="decimal"
+                  onChange={(inputEvent) =>
+                    updateEditForm("latitude", inputEvent.target.value)
+                  }
+                  required
+                  value={editForm.latitude}
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">
+                {labels.fields.longitude}
+                <Input
+                  disabled={managementDisabled}
+                  inputMode="decimal"
+                  onChange={(inputEvent) =>
+                    updateEditForm("longitude", inputEvent.target.value)
+                  }
+                  required
+                  value={editForm.longitude}
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">
+                {labels.fields.radiusMeters}
+                <Input
+                  disabled={managementDisabled}
+                  inputMode="numeric"
+                  min={1}
+                  onChange={(inputEvent) =>
+                    updateEditForm("radiusMeters", inputEvent.target.value)
+                  }
+                  required
+                  type="number"
+                  value={editForm.radiusMeters}
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">
+                {labels.fields.status}
+                <select
+                  className="min-h-11 w-full min-w-0 rounded-md border border-input bg-surface px-3 py-2 text-sm text-foreground shadow-[var(--shadow-sm)]"
+                  disabled={managementDisabled}
+                  onChange={(inputEvent) =>
+                    updateEditForm("status", inputEvent.target.value as EventStatus)
+                  }
+                  value={editForm.status}
+                >
+                  {eventStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {getStatusLabel(status, statusLabels)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">
+                {labels.fields.startsAt}
+                <Input
+                  disabled={managementDisabled}
+                  onChange={(inputEvent) =>
+                    updateEditForm("startsAt", inputEvent.target.value)
+                  }
+                  required
+                  type="datetime-local"
+                  value={editForm.startsAt}
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-foreground">
+                {labels.fields.endsAt}
+                <Input
+                  disabled={managementDisabled}
+                  onChange={(inputEvent) =>
+                    updateEditForm("endsAt", inputEvent.target.value)
+                  }
+                  required
+                  type="datetime-local"
+                  value={editForm.endsAt}
+                />
+              </label>
+            </div>
+
+            <div className="grid gap-3 rounded-md border border-border bg-surface px-3 py-3 sm:grid-cols-2">
+              <label className="flex items-start gap-3 text-sm text-foreground">
+                <input
+                  checked={editForm.requirePhoto}
+                  className="mt-1 size-4"
+                  disabled={managementDisabled}
+                  onChange={(inputEvent) =>
+                    updateEditForm("requirePhoto", inputEvent.target.checked)
+                  }
+                  type="checkbox"
+                />
+                <span>{labels.fields.requirePhoto}</span>
+              </label>
+              <label className="flex items-start gap-3 text-sm text-foreground">
+                <input
+                  checked={editForm.requireCheckout}
+                  className="mt-1 size-4"
+                  disabled={managementDisabled}
+                  onChange={(inputEvent) =>
+                    updateEditForm("requireCheckout", inputEvent.target.checked)
+                  }
+                  type="checkbox"
+                />
+                <span>{labels.fields.requireCheckout}</span>
+              </label>
+            </div>
+
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
+              <Button disabled={managementDisabled} type="submit">
+                {updateMutation.isPending
+                  ? labels.actions.saving
+                  : labels.actions.save}
+              </Button>
+              <Button
+                disabled={managementDisabled}
+                onClick={() => submitUpdate("ACTIVE")}
+                type="button"
+                variant="outline"
+              >
+                {labels.actions.setActive}
+              </Button>
+              <Button
+                disabled={managementDisabled}
+                onClick={() => submitUpdate("CANCELLED")}
+                type="button"
+                variant="outline"
+              >
+                {labels.actions.setInactive}
+              </Button>
+              <Button
+                className="sm:ms-auto"
+                disabled={managementDisabled}
+                onClick={submitDelete}
+                type="button"
+                variant="danger"
+              >
+                {deleteMutation.isPending
+                  ? labels.actions.deleting
+                  : labels.actions.delete}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card className="overflow-hidden">
         <CardHeader>

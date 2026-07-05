@@ -85,6 +85,7 @@ export async function POST(
       eventId: params.data.eventId,
       session: employeeSession,
       input: parsed.data,
+      userAgent: request.headers.get("user-agent"),
     });
 
     return apiSuccess(result, 201, {

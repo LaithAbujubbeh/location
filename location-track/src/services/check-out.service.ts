@@ -16,6 +16,12 @@ import {
 } from "../lib/geo.ts";
 import type { AuthenticatedSession } from "../lib/permissions.ts";
 import type { CheckOutPayloadInput } from "../lib/validators.ts";
+import {
+  checkTrustedUserDeviceForAction,
+  DeviceServiceError,
+  type DeviceTrustRejection,
+  requireTrustedUserDeviceForAction,
+} from "./device.service.ts";
 
 export class CheckOutServiceError extends Error {
   readonly status: number;
@@ -46,6 +52,15 @@ type CheckOutAssignmentState = {
     endsAt: Date;
     checkoutRequired: boolean;
   };
+};
+
+type CheckOutTransactionArgs = {
+  eventId: string;
+  employeeId: string;
+  input: CheckOutPayloadInput;
+  now: Date;
+  persistDeviceRejection?: boolean;
+  userAgent?: string | null;
 };
 
 function assertEmployeeSession(session: AuthenticatedSession) {
@@ -239,25 +254,45 @@ export async function checkOutFromEvent({
   eventId,
   session,
   input,
+  userAgent,
   now = new Date(),
 }: {
   eventId: string;
   session: AuthenticatedSession;
   input: CheckOutPayloadInput;
+  userAgent?: string | null;
   now?: Date;
 }): Promise<CheckOutResult> {
   const { prisma } = await import("../lib/prisma.ts");
   const employeeId = assertEmployeeSession(session);
 
-  return prisma.$transaction((tx) =>
+  const result = await prisma.$transaction((tx) =>
     checkOutFromEventInTransaction(tx, {
       eventId,
       employeeId,
       input,
+      persistDeviceRejection: true,
+      userAgent,
       now,
     }),
   );
+
+  if ("trusted" in result) {
+    throw new CheckOutServiceError(result.status, result.code, result.message);
+  }
+
+  return result;
 }
+
+export async function checkOutFromEventInTransaction(
+  tx: Prisma.TransactionClient,
+  args: CheckOutTransactionArgs & { persistDeviceRejection: true },
+): Promise<CheckOutResult | DeviceTrustRejection>;
+
+export async function checkOutFromEventInTransaction(
+  tx: Prisma.TransactionClient,
+  args: CheckOutTransactionArgs,
+): Promise<CheckOutResult>;
 
 export async function checkOutFromEventInTransaction(
   tx: Prisma.TransactionClient,
@@ -265,14 +300,11 @@ export async function checkOutFromEventInTransaction(
     eventId,
     employeeId,
     input,
+    persistDeviceRejection = false,
+    userAgent,
     now,
-  }: {
-    eventId: string;
-    employeeId: string;
-    input: CheckOutPayloadInput;
-    now: Date;
-  },
-): Promise<CheckOutResult> {
+  }: CheckOutTransactionArgs,
+): Promise<CheckOutResult | DeviceTrustRejection> {
   const assignment = await tx.eventAssignment.findUnique({
     where: {
       eventId_employeeId: {
@@ -310,44 +342,39 @@ export async function checkOutFromEventInTransaction(
     );
   }
 
-  const trustedDevice = await tx.userDevice.findUnique({
-    where: {
-      userId_deviceId: {
-        userId: employeeId,
-        deviceId: input.deviceId,
-      },
-    },
-    select: {
-      id: true,
-      status: true,
-    },
-  });
-
   validateCheckOutAccess({
     assignment,
-    deviceStatus: trustedDevice?.status ?? null,
+    deviceStatus: DeviceStatus.TRUSTED,
     now,
   });
 
-  if (!trustedDevice) {
-    throw new CheckOutServiceError(
-      403,
-      "DEVICE_NOT_TRUSTED",
-      "This device is not trusted for checkout.",
-    );
-  }
+  if (persistDeviceRejection) {
+    const deviceResult = await checkTrustedUserDeviceForAction(tx, {
+      userId: employeeId,
+      deviceId: input.deviceId,
+      userAgent,
+      now,
+    });
 
-  await tx.userDevice.update({
-    where: {
-      id: trustedDevice.id,
-    },
-    data: {
-      lastSeenAt: now,
-    },
-    select: {
-      id: true,
-    },
-  });
+    if (!deviceResult.trusted) {
+      return deviceResult;
+    }
+  } else {
+    try {
+      await requireTrustedUserDeviceForAction(tx, {
+        userId: employeeId,
+        deviceId: input.deviceId,
+        userAgent,
+        now,
+      });
+    } catch (error) {
+      if (error instanceof DeviceServiceError) {
+        throw new CheckOutServiceError(error.status, error.code, error.message);
+      }
+
+      throw error;
+    }
+  }
 
   const eventPoint = {
     latitude: assignment.event.latitude.toNumber(),

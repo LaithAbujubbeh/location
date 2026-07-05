@@ -15,6 +15,7 @@ import type {
   CreateEventInput,
   EmployeeEventDetailQueryInput,
   EmployeeEventListQueryInput,
+  UpdateEventInput,
 } from "../lib/validators.ts";
 
 export class EventServiceError extends Error {
@@ -52,6 +53,15 @@ export type CreateEventResult = {
 type CreateEventForAdminArgs = {
   input: CreateEventInput;
   createdByUserId: string;
+};
+
+type UpdateEventForAdminArgs = {
+  eventId: string;
+  input: UpdateEventInput;
+};
+
+type DeleteEventForAdminArgs = {
+  eventId: string;
 };
 
 export type EventRecheckSlotSummary = {
@@ -257,6 +267,7 @@ const adminEventSummarySelect = {
   longitude: true,
   startsAt: true,
   endsAt: true,
+  status: true,
   radiusMeters: true,
   photoRequired: true,
   checkoutRequired: true,
@@ -400,6 +411,7 @@ function toAdminEventSummary(event: SelectedAdminEventSummary): AdminEventSummar
     longitude: event.longitude.toNumber(),
     startsAt: event.startsAt.toISOString(),
     endsAt: event.endsAt.toISOString(),
+    status: event.status,
     radiusMeters: event.radiusMeters,
     requirePhoto: event.photoRequired,
     requireCheckout: event.checkoutRequired,
@@ -711,6 +723,73 @@ export async function listAdminEvents({
       total,
     }),
   };
+}
+
+export async function updateEventForAdmin({
+  eventId,
+  input,
+}: UpdateEventForAdminArgs): Promise<{ event: AdminEventSummary }> {
+  try {
+    const event = await prisma.event.update({
+      where: {
+        id: eventId,
+      },
+      data: {
+        title: input.name,
+        locationName: input.locationName,
+        latitude: new Prisma.Decimal(input.latitude),
+        longitude: new Prisma.Decimal(input.longitude),
+        radiusMeters: input.radiusMeters,
+        startsAt: input.startsAt,
+        endsAt: input.endsAt,
+        photoRequired: input.requirePhoto,
+        checkoutRequired: input.requireCheckout,
+        status: input.status,
+      },
+      select: adminEventSummarySelect,
+    });
+
+    return {
+      event: toAdminEventSummary(event),
+    };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new EventServiceError(404, "EVENT_NOT_FOUND", "Event not found.");
+    }
+
+    throw error;
+  }
+}
+
+export async function deleteEventForAdmin({
+  eventId,
+}: DeleteEventForAdminArgs): Promise<{ deleted: true }> {
+  try {
+    await prisma.event.delete({
+      where: {
+        id: eventId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return {
+      deleted: true,
+    };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new EventServiceError(404, "EVENT_NOT_FOUND", "Event not found.");
+    }
+
+    throw error;
+  }
 }
 
 export async function listAssignedEventsForEmployee({

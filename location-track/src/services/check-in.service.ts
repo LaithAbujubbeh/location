@@ -1,6 +1,5 @@
 import {
   AssignmentStatus,
-  DeviceStatus,
   EventStatus,
   Prisma,
   ProofStatus,
@@ -17,6 +16,12 @@ import {
 import { prisma } from "../lib/prisma.ts";
 import type { AuthenticatedSession } from "../lib/permissions.ts";
 import type { CheckInPayloadInput } from "../lib/validators.ts";
+import {
+  checkTrustedUserDeviceForAction,
+  DeviceServiceError,
+  type DeviceTrustRejection,
+  requireTrustedUserDeviceForAction,
+} from "./device.service.ts";
 import { scheduleRechecksForAssignment } from "./recheck.service.ts";
 
 export class CheckInServiceError extends Error {
@@ -35,6 +40,7 @@ type CheckInToEventArgs = {
   eventId: string;
   session: AuthenticatedSession;
   input: CheckInPayloadInput;
+  userAgent?: string | null;
   now?: Date;
 };
 
@@ -50,6 +56,15 @@ type CheckInAssignmentResponseState = {
   status: AssignmentStatus;
   checkedInAt: Date | null;
   failureReason: string | null;
+};
+
+type CheckInTransactionArgs = {
+  eventId: string;
+  employeeId: string;
+  input: CheckInPayloadInput;
+  now: Date;
+  persistDeviceRejection?: boolean;
+  userAgent?: string | null;
 };
 
 export type CheckInResult = {
@@ -186,19 +201,38 @@ export async function checkInToEvent({
   eventId,
   session,
   input,
+  userAgent,
   now = new Date(),
 }: CheckInToEventArgs): Promise<CheckInResult> {
   const employeeId = assertEmployeeSession(session);
 
-  return prisma.$transaction((tx) =>
+  const result = await prisma.$transaction((tx) =>
     checkInToEventInTransaction(tx, {
       eventId,
       employeeId,
       input,
+      persistDeviceRejection: true,
+      userAgent,
       now,
     }),
   );
+
+  if ("trusted" in result) {
+    throw new CheckInServiceError(result.status, result.code, result.message);
+  }
+
+  return result;
 }
+
+export async function checkInToEventInTransaction(
+  tx: Prisma.TransactionClient,
+  args: CheckInTransactionArgs & { persistDeviceRejection: true },
+): Promise<CheckInResult | DeviceTrustRejection>;
+
+export async function checkInToEventInTransaction(
+  tx: Prisma.TransactionClient,
+  args: CheckInTransactionArgs,
+): Promise<CheckInResult>;
 
 export async function checkInToEventInTransaction(
   tx: Prisma.TransactionClient,
@@ -206,14 +240,11 @@ export async function checkInToEventInTransaction(
     eventId,
     employeeId,
     input,
+    persistDeviceRejection = false,
+    userAgent,
     now,
-  }: {
-    eventId: string;
-    employeeId: string;
-    input: CheckInPayloadInput;
-    now: Date;
-  },
-): Promise<CheckInResult> {
+  }: CheckInTransactionArgs,
+): Promise<CheckInResult | DeviceTrustRejection> {
   const assignment = await tx.eventAssignment.findUnique({
     where: {
       eventId_employeeId: {
@@ -283,38 +314,33 @@ export async function checkInToEventInTransaction(
     );
   }
 
-  const trustedDevice = await tx.userDevice.findUnique({
-    where: {
-      userId_deviceId: {
+  if (persistDeviceRejection) {
+    const deviceResult = await checkTrustedUserDeviceForAction(tx, {
+      userId: employeeId,
+      deviceId: input.deviceId,
+      userAgent,
+      now,
+    });
+
+    if (!deviceResult.trusted) {
+      return deviceResult;
+    }
+  } else {
+    try {
+      await requireTrustedUserDeviceForAction(tx, {
         userId: employeeId,
         deviceId: input.deviceId,
-      },
-    },
-    select: {
-      id: true,
-      status: true,
-    },
-  });
+        userAgent,
+        now,
+      });
+    } catch (error) {
+      if (error instanceof DeviceServiceError) {
+        throw new CheckInServiceError(error.status, error.code, error.message);
+      }
 
-  if (!trustedDevice || trustedDevice.status !== DeviceStatus.TRUSTED) {
-    throw new CheckInServiceError(
-      403,
-      "DEVICE_NOT_TRUSTED",
-      "This device is not trusted for check-in.",
-    );
+      throw error;
+    }
   }
-
-  await tx.userDevice.update({
-    where: {
-      id: trustedDevice.id,
-    },
-    data: {
-      lastSeenAt: now,
-    },
-    select: {
-      id: true,
-    },
-  });
 
   const eventPoint = {
     latitude: assignment.event.latitude.toNumber(),

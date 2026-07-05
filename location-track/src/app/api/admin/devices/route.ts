@@ -1,12 +1,30 @@
 import type { ZodError } from "zod";
 
-import { apiError, apiSuccess } from "@/lib/api-response";
-import { privateNoStoreHeaders } from "@/lib/cache";
-import { PermissionError, requireAdmin } from "@/lib/permissions";
-import { adminDeviceListQuerySchema } from "@/lib/validators";
-import { listDevicesForAdmin } from "@/services/device.service";
+import { apiError, apiSuccess } from "../../../../lib/api-response.ts";
+import { privateNoStoreHeaders } from "../../../../lib/cache.ts";
+import { PermissionError, requireAdmin } from "../../../../lib/permissions.ts";
+import {
+  adminDeviceListQuerySchema,
+  type AdminDeviceListQueryInput,
+} from "../../../../lib/validators.ts";
+import {
+  listDevicesForAdmin,
+  type AdminDeviceListResult,
+} from "../../../../services/device.service.ts";
 
 export const dynamic = "force-dynamic";
+
+type AdminDevicesListDeps = {
+  listDevices: (input: {
+    query: AdminDeviceListQueryInput;
+  }) => Promise<AdminDeviceListResult>;
+  requireAdminSession: typeof requireAdmin;
+};
+
+const defaultListDeps: AdminDevicesListDeps = {
+  listDevices: listDevicesForAdmin,
+  requireAdminSession: requireAdmin,
+};
 
 function formatValidationError(error: ZodError) {
   return error.issues
@@ -17,9 +35,12 @@ function formatValidationError(error: ZodError) {
     .join("; ");
 }
 
-export async function GET(request: Request) {
+export async function handleAdminListDevicesRequest(
+  request: Request,
+  deps: AdminDevicesListDeps = defaultListDeps,
+) {
   try {
-    await requireAdmin();
+    await deps.requireAdminSession();
 
     const searchParams = new URL(request.url).searchParams;
     const parsed = adminDeviceListQuerySchema.safeParse({
@@ -39,7 +60,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const result = await listDevicesForAdmin({
+    const result = await deps.listDevices({
       query: parsed.data,
     });
 
@@ -59,4 +80,8 @@ export async function GET(request: Request) {
       headers: privateNoStoreHeaders,
     });
   }
+}
+
+export async function GET(request: Request) {
+  return handleAdminListDevicesRequest(request);
 }

@@ -31,6 +31,7 @@ type CheckOutRouteDeps = {
     eventId: string;
     session: Awaited<ReturnType<typeof requireEmployee>>;
     input: CheckOutPayloadInput;
+    userAgent?: string | null;
   }) => Promise<CheckOutResult>;
 };
 
@@ -107,6 +108,7 @@ export async function handleEmployeeCheckOutRequest(
       eventId: params.data.eventId,
       session,
       input: parsed.data,
+      userAgent: request.headers.get("user-agent"),
     });
 
     return apiSuccess(result, 201, {

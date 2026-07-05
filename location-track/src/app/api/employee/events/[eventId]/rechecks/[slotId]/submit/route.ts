@@ -88,6 +88,7 @@ export async function POST(
       slotId: params.data.slotId,
       session: employeeSession,
       input: parsed.data,
+      userAgent: request.headers.get("user-agent"),
     });
 
     return apiSuccess(result, 201, {

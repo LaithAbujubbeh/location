@@ -1,16 +1,16 @@
 import { DeviceStatus, Prisma } from "@prisma/client";
 
-import { prisma } from "@/lib/prisma";
-import type { AdminDeviceListQueryInput } from "@/lib/validators";
+import type { AdminDeviceListQueryInput } from "../lib/validators.ts";
 
 export class DeviceServiceError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly code: string,
-    message: string,
-  ) {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(status: number, code: string, message: string) {
     super(message);
     this.name = "DeviceServiceError";
+    this.status = status;
+    this.code = code;
   }
 }
 
@@ -90,10 +90,37 @@ type CheckDeviceTrustedArgs = {
   deviceId: string;
 };
 
+type RequireTrustedUserDeviceArgs = {
+  userId: string;
+  deviceId: string;
+  userAgent?: string | null;
+  now: Date;
+};
+
 type ReviewDeviceArgs = {
   userDeviceId: string;
   reviewedByUserId: string;
 };
+
+export const DEVICE_APPROVAL_REQUIRED_MESSAGE =
+  "This device is waiting for admin approval.";
+export const DEVICE_REJECTED_MESSAGE = "This device was rejected by an admin.";
+
+export type DeviceTrustRejection = {
+  trusted: false;
+  status: number;
+  code: string;
+  message: string;
+};
+
+type DeviceTrustResult =
+  | {
+      trusted: true;
+      device: {
+        id: string;
+      };
+    }
+  | DeviceTrustRejection;
 
 function toDeviceRecord(device: SelectedUserDevice): DeviceRecord {
   return {
@@ -138,6 +165,7 @@ export async function getOrCreateUserDevice({
   userAgent,
   label,
 }: GetOrCreateUserDeviceArgs): Promise<DeviceRegistrationResult> {
+  const { prisma } = await import("../lib/prisma.ts");
   const now = new Date();
 
   try {
@@ -207,6 +235,7 @@ export async function isDeviceTrusted({
   userId,
   deviceId,
 }: CheckDeviceTrustedArgs): Promise<boolean> {
+  const { prisma } = await import("../lib/prisma.ts");
   const device = await prisma.userDevice.findUnique({
     where: {
       userId_deviceId: {
@@ -222,11 +251,108 @@ export async function isDeviceTrusted({
   return device?.status === DeviceStatus.TRUSTED;
 }
 
+export async function checkTrustedUserDeviceForAction(
+  tx: Prisma.TransactionClient,
+  { userId, deviceId, userAgent, now }: RequireTrustedUserDeviceArgs,
+): Promise<DeviceTrustResult> {
+  const existingDevice = await tx.userDevice.findUnique({
+    where: {
+      userId_deviceId: {
+        userId,
+        deviceId,
+      },
+    },
+    select: {
+      id: true,
+      status: true,
+      approvedAt: true,
+      rejectedAt: true,
+    },
+  });
+
+  if (!existingDevice) {
+    await tx.userDevice.create({
+      data: {
+        userId,
+        deviceId,
+        status: DeviceStatus.PENDING,
+        userAgent,
+        firstSeenAt: now,
+        lastSeenAt: now,
+        approvedAt: null,
+        rejectedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return {
+      trusted: false,
+      status: 403,
+      code: "DEVICE_NOT_TRUSTED",
+      message: DEVICE_APPROVAL_REQUIRED_MESSAGE,
+    };
+  }
+
+  if (existingDevice.rejectedAt || existingDevice.status === DeviceStatus.REJECTED) {
+    return {
+      trusted: false,
+      status: 403,
+      code: "DEVICE_REJECTED",
+      message: DEVICE_REJECTED_MESSAGE,
+    };
+  }
+
+  if (existingDevice.status !== DeviceStatus.TRUSTED) {
+    return {
+      trusted: false,
+      status: 403,
+      code: "DEVICE_NOT_TRUSTED",
+      message: DEVICE_APPROVAL_REQUIRED_MESSAGE,
+    };
+  }
+
+  await tx.userDevice.update({
+    where: {
+      id: existingDevice.id,
+    },
+    data: {
+      lastSeenAt: now,
+      ...(userAgent !== undefined ? { userAgent } : {}),
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return {
+    trusted: true,
+    device: {
+      id: existingDevice.id,
+    },
+  };
+}
+
+export async function requireTrustedUserDeviceForAction(
+  tx: Prisma.TransactionClient,
+  input: RequireTrustedUserDeviceArgs,
+) {
+  const result = await checkTrustedUserDeviceForAction(tx, input);
+
+  if (!result.trusted) {
+    throw new DeviceServiceError(result.status, result.code, result.message);
+  }
+
+  return result.device;
+}
+
 export async function listDevicesForAdmin({
   query,
 }: {
   query: AdminDeviceListQueryInput;
 }): Promise<AdminDeviceListResult> {
+  const { prisma } = await import("../lib/prisma.ts");
   const where: Prisma.UserDeviceWhereInput = {
     ...(query.status ? { status: query.status } : {}),
   };
@@ -290,6 +416,7 @@ export async function approveUserDevice({
   userDeviceId,
   reviewedByUserId,
 }: ReviewDeviceArgs): Promise<DeviceRecord> {
+  const { prisma } = await import("../lib/prisma.ts");
   const now = new Date();
 
   try {
@@ -320,6 +447,7 @@ export async function rejectUserDevice({
   userDeviceId,
   reviewedByUserId,
 }: ReviewDeviceArgs): Promise<DeviceRecord> {
+  const { prisma } = await import("../lib/prisma.ts");
   const now = new Date();
 
   try {

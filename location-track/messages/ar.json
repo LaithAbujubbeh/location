@@ -300,11 +300,14 @@
       "notSubmitted": "لم يتم الإرسال بعد",
       "radiusMeters": "{value} متر",
       "timelinePreviewUnavailable": "تعذر تحميل معاينة السجل، لذلك قد لا تتوفر أحدث حالات إعادة التحقق.",
+      "deleteConfirm": "هل تريد حذف هذه الفعالية وتعييناتها؟ لا يمكن التراجع عن ذلك.",
       "sections": {
         "employeesDescription": "تابع تعيين كل موظف وأحدث إشارات الحضور.",
         "employeesTitle": "حالة الموظفين",
         "locationDescription": "الإحداثيات المختارة ونطاق الحضور.",
         "locationTitle": "ملخص الموقع",
+        "managementDescription": "عدّل إعدادات الفعالية الأساسية أو غيّر حالتها أو احذفها.",
+        "managementTitle": "إدارة الفعالية",
         "rechecksDescription": "نوافذ إعادة التحقق الثابتة المعدة لهذه الفعالية.",
         "rechecksTitle": "مواعيد إعادة التحقق الثابتة",
         "summaryDescription": "إعدادات الفعالية ومتطلبات الحضور.",
@@ -327,14 +330,38 @@
         "latestRecheck": "آخر إعادة تحقق",
         "latitude": "خط العرض",
         "location": "الموقع",
+        "locationName": "اسم الموقع",
         "longitude": "خط الطول",
+        "name": "اسم الفعالية",
         "radius": "النطاق",
+        "radiusMeters": "النطاق بالمتر",
         "requireCheckout": "يتطلب تسجيل الخروج",
         "requirePhoto": "يتطلب صورة",
+        "endsAt": "ينتهي في",
         "slotExpiresAt": "ينتهي في",
         "slotStartsAt": "يبدأ في",
+        "startsAt": "يبدأ في",
         "status": "الحالة",
         "timeWindow": "الوقت"
+      },
+      "validation": {
+        "endsAfterStart": "يجب أن يكون وقت الانتهاء بعد وقت البدء.",
+        "latitude": "يجب أن يكون خط العرض بين -90 و90.",
+        "longitude": "يجب أن يكون خط الطول بين -180 و180.",
+        "radius": "يجب أن يكون النطاق رقما صحيحا بين 1 و50000 متر.",
+        "required": "املأ حقول الفعالية المطلوبة."
+      },
+      "backendErrors": {
+        "EVENT_NOT_FOUND": "لم يتم العثور على الفعالية.",
+        "FORBIDDEN": "صلاحية المدير مطلوبة.",
+        "INVALID_JSON": "طلب الفعالية ليس JSON صالحا.",
+        "REQUEST_FAILED": "فشل طلب الفعالية.",
+        "UNAUTHORIZED": "سجل الدخول مرة أخرى قبل إدارة الفعاليات.",
+        "VALIDATION_ERROR": "لم يتم قبول بيانات الفعالية المرسلة."
+      },
+      "errors": {
+        "unknownDeleteError": "تعذر حذف الفعالية. حاول مرة أخرى.",
+        "unknownUpdateError": "تعذر حفظ الفعالية. حاول مرة أخرى."
       },
       "filters": {
         "allStatuses": "كل الحالات",
@@ -351,8 +378,14 @@
       },
       "actions": {
         "backToEvents": "العودة إلى الفعاليات",
+        "delete": "حذف الفعالية",
+        "deleting": "جار الحذف",
         "refresh": "تحديث",
         "retry": "حاول مرة أخرى",
+        "save": "حفظ التغييرات",
+        "saving": "جار الحفظ",
+        "setActive": "تفعيل",
+        "setInactive": "تعطيل",
         "viewTimeline": "عرض السجل الزمني"
       }
     },
@@ -553,7 +586,8 @@
       },
       "backendErrors": {
         "ALREADY_CHECKED_IN": "تم تسجيل الحضور مسبقا.",
-        "DEVICE_NOT_TRUSTED": "هذا الجهاز غير موثوق بعد. اطلب من المدير الموافقة عليه قبل تسجيل الحضور.",
+        "DEVICE_NOT_TRUSTED": "يحتاج هذا الجهاز إلى موافقة المدير قبل أن تتمكن من المتابعة.",
+        "DEVICE_REJECTED": "رفض المدير هذا الجهاز.",
         "EVENT_NOT_OPEN_FOR_CHECK_IN": "الفعالية غير متاحة لتسجيل الحضور الآن.",
         "FORBIDDEN": "ليست لديك صلاحية تسجيل الحضور.",
         "PHOTO_REQUIRED": "إثبات الصورة مطلوب.",
@@ -650,7 +684,7 @@
         "notCheckedIn": "يجب تسجيل الحضور قبل تسجيل الخروج.",
         "photoUploadNotConfigured": "لم يتم إعداد رفع الصور بعد.",
         "poorAccuracy": "دقة GPS ضعيفة. قد يضع الخادم هذا الإثبات قيد المراجعة أو يرفضه.",
-        "untrustedDevice": "هذا الجهاز غير موثوق بعد. اطلب من المدير الموافقة عليه قبل تسجيل الخروج."
+        "untrustedDevice": "يحتاج هذا الجهاز إلى موافقة المدير قبل أن تتمكن من المتابعة."
       },
       "locationErrors": {
         "PERMISSION_DENIED": "تم رفض إذن الموقع. اسمح بالوصول إلى الموقع من المتصفح ثم حاول مرة أخرى.",
@@ -665,7 +699,8 @@
         "ASSIGNMENT_NOT_IN_PROGRESS": "هذا التعيين غير مؤهل لتسجيل الخروج.",
         "CHECKOUT_NOT_ALLOWED": "تسجيل الخروج غير مطلوب لهذه الفعالية.",
         "CHECK_IN_REQUIRED": "يجب تسجيل الحضور قبل تسجيل الخروج.",
-        "DEVICE_NOT_TRUSTED": "هذا الجهاز غير موثوق بعد. اطلب من المدير الموافقة عليه قبل تسجيل الخروج.",
+        "DEVICE_NOT_TRUSTED": "يحتاج هذا الجهاز إلى موافقة المدير قبل أن تتمكن من المتابعة.",
+        "DEVICE_REJECTED": "رفض المدير هذا الجهاز.",
         "EVENT_NOT_OPEN_FOR_CHECK_OUT": "الفعالية غير متاحة لتسجيل الخروج الآن.",
         "FORBIDDEN": "ليست لديك صلاحية تسجيل الخروج.",
         "INVALID_JSON": "طلب تسجيل الخروج ليس بصيغة JSON صحيحة.",
@@ -769,7 +804,8 @@
       },
       "backendErrors": {
         "ASSIGNMENT_NOT_IN_PROGRESS": "يجب تسجيل الحضور قبل إرسال إعادة التحقق هذه.",
-        "DEVICE_NOT_TRUSTED": "هذا الجهاز غير موثوق بعد. اطلب من المدير الموافقة عليه قبل إرسال إعادة التحقق.",
+        "DEVICE_NOT_TRUSTED": "يحتاج هذا الجهاز إلى موافقة المدير قبل أن تتمكن من المتابعة.",
+        "DEVICE_REJECTED": "رفض المدير هذا الجهاز.",
         "FORBIDDEN": "ليست لديك صلاحية إرسال إعادة التحقق هذه.",
         "PHOTO_REQUIRED": "إثبات الصورة مطلوب.",
         "RECHECK_ALREADY_SUBMITTED": "تم إرسال إعادة التحقق هذه مسبقا.",

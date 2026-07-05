@@ -153,6 +153,27 @@ export type AdminCreateEventResult = {
   assignedEmployeesCount: number;
 };
 
+export type AdminUpdateEventPayload = {
+  name: string;
+  locationName: string;
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  startsAt: string;
+  endsAt: string;
+  requirePhoto: boolean;
+  requireCheckout: boolean;
+  status: EventStatus;
+};
+
+export type AdminUpdateEventResult = {
+  event: AdminEventSummary;
+};
+
+export type AdminDeleteEventResult = {
+  deleted: true;
+};
+
 type ApiBody<T> = ApiSuccessBody<T> | ApiErrorBody;
 
 export class AdminEventApiError extends Error {
@@ -279,6 +300,33 @@ export async function createAdminEvent(payload: AdminCreateEventPayload) {
   });
 
   return readAdminApiBody<AdminCreateEventResult>(response);
+}
+
+export async function updateAdminEvent(
+  eventId: string,
+  payload: AdminUpdateEventPayload,
+) {
+  const response = await fetch(`/api/admin/events/${encodeURIComponent(eventId)}`, {
+    method: "PATCH",
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return readAdminApiBody<AdminUpdateEventResult>(response);
+}
+
+export async function deleteAdminEvent(eventId: string) {
+  const response = await fetch(`/api/admin/events/${encodeURIComponent(eventId)}`, {
+    method: "DELETE",
+    cache: "no-store",
+    credentials: "same-origin",
+  });
+
+  return readAdminApiBody<AdminDeleteEventResult>(response);
 }
 
 export function formatDateTime(value: string, locale: string) {

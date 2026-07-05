@@ -13,6 +13,9 @@ const { rateLimitPolicies } = await import("../../lib/rate-limit.ts");
 const { handleAdminCreateEventRequest, handleAdminListEventsRequest } = await import(
   "../../app/api/admin/events/route.ts"
 );
+const { handleAdminDeleteEventRequest, handleAdminUpdateEventRequest } = await import(
+  "../../app/api/admin/events/[eventId]/route.ts"
+);
 
 const validCreateEventBody = {
   name: "Warehouse Audit",
@@ -33,6 +36,19 @@ const validCreateEventBody = {
   requireCheckout: true,
 };
 
+const validUpdateEventBody = {
+  name: "Warehouse Audit Updated",
+  locationName: "Amman Warehouse Gate",
+  latitude: 31.9712,
+  longitude: 35.9079,
+  radiusMeters: 90,
+  startsAt: "2026-07-10T09:30:00.000Z",
+  endsAt: "2026-07-10T12:30:00.000Z",
+  requirePhoto: false,
+  requireCheckout: true,
+  status: EventStatus.ACTIVE,
+};
+
 function jsonRequest(body: unknown) {
   return new Request("http://localhost:3000/api/admin/events", {
     method: "POST",
@@ -42,6 +58,22 @@ function jsonRequest(body: unknown) {
     },
   });
 }
+
+function eventJsonRequest(body: unknown, method = "PATCH") {
+  return new Request("http://localhost:3000/api/admin/events/event_1", {
+    method,
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+const eventRouteContext = {
+  params: Promise.resolve({
+    eventId: "event_1",
+  }),
+};
 
 test("admin can create event through the route handler", async () => {
   let createdByUserId: string | null = null;
@@ -114,6 +146,193 @@ test("admin can create event through the route handler", async () => {
   assert.equal(body.data.assignedEmployeesCount, 1);
   assert.equal(createdByUserId, "admin_1");
   assert.equal(sawParsedDate, true);
+});
+
+test("admin can update event through the route handler", async () => {
+  let updatedEventId: string | null = null;
+  let sawParsedDate = false;
+
+  const response = await handleAdminUpdateEventRequest(
+    eventJsonRequest(validUpdateEventBody),
+    eventRouteContext,
+    {
+      requireAdminSession: async () =>
+        ({
+          user: {
+            id: "admin_1",
+            role: UserRole.ADMIN,
+          },
+        }) as never,
+      consumeRateLimit: async ({ policy, userId }) => {
+        assert.equal(policy, rateLimitPolicies.adminCreateEvent);
+        assert.equal(userId, "admin_1");
+
+        return {
+          allowed: true,
+          limit: 20,
+          remaining: 19,
+          resetAt: new Date("2026-07-10T13:00:00.000Z"),
+          retryAfterMs: 0,
+        };
+      },
+      updateEvent: async ({ eventId, input }) => {
+        updatedEventId = eventId;
+        sawParsedDate = input.startsAt instanceof Date;
+
+        return {
+          event: {
+            id: eventId,
+            name: input.name,
+            locationName: input.locationName,
+            latitude: input.latitude,
+            longitude: input.longitude,
+            radiusMeters: input.radiusMeters,
+            startsAt: input.startsAt.toISOString(),
+            endsAt: input.endsAt.toISOString(),
+            status: input.status,
+            requirePhoto: input.requirePhoto,
+            requireCheckout: input.requireCheckout,
+            recheckSlots: [],
+          },
+        };
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(
+    response.headers.get("Cache-Control"),
+    PRIVATE_NO_STORE_HEADER_VALUE,
+  );
+
+  const body = await response.json();
+
+  assert.equal(body.ok, true);
+  assert.equal(body.data.event.name, "Warehouse Audit Updated");
+  assert.equal(body.data.event.status, EventStatus.ACTIVE);
+  assert.equal(updatedEventId, "event_1");
+  assert.equal(sawParsedDate, true);
+});
+
+test("admin can delete event through the route handler", async () => {
+  let deletedEventId: string | null = null;
+
+  const response = await handleAdminDeleteEventRequest(
+    new Request("http://localhost:3000/api/admin/events/event_1", {
+      method: "DELETE",
+    }),
+    eventRouteContext,
+    {
+      requireAdminSession: async () =>
+        ({
+          user: {
+            id: "admin_1",
+            role: UserRole.ADMIN,
+          },
+        }) as never,
+      consumeRateLimit: async ({ policy, userId }) => {
+        assert.equal(policy, rateLimitPolicies.adminCreateEvent);
+        assert.equal(userId, "admin_1");
+
+        return {
+          allowed: true,
+          limit: 20,
+          remaining: 19,
+          resetAt: new Date("2026-07-10T13:00:00.000Z"),
+          retryAfterMs: 0,
+        };
+      },
+      deleteEvent: async ({ eventId }) => {
+        deletedEventId = eventId;
+
+        return {
+          deleted: true,
+        };
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(deletedEventId, "event_1");
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      deleted: true,
+    },
+  });
+});
+
+test("admin update event rejects an end time before the start time", async () => {
+  const response = await handleAdminUpdateEventRequest(
+    eventJsonRequest({
+      ...validUpdateEventBody,
+      endsAt: "2026-07-10T08:30:00.000Z",
+    }),
+    eventRouteContext,
+    {
+      requireAdminSession: async () =>
+        ({
+          user: {
+            id: "admin_1",
+            role: UserRole.ADMIN,
+          },
+        }) as never,
+      consumeRateLimit: async () => ({
+        allowed: true,
+        limit: 20,
+        remaining: 19,
+        resetAt: new Date("2026-07-10T13:00:00.000Z"),
+        retryAfterMs: 0,
+      }),
+      updateEvent: async () => {
+        throw new Error("invalid event should not be updated");
+      },
+    },
+  );
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error.message, /endsAt must be after startsAt/);
+});
+
+test("non-admin cannot update or delete event", async () => {
+  const deps = {
+    requireAdminSession: async () => {
+      throw new PermissionError(
+        403,
+        "FORBIDDEN",
+        "Administrator access is required.",
+      );
+    },
+    consumeRateLimit: async () => {
+      throw new Error("rate limit should not run without admin session");
+    },
+  };
+
+  const updateResponse = await handleAdminUpdateEventRequest(
+    eventJsonRequest(validUpdateEventBody),
+    eventRouteContext,
+    {
+      ...deps,
+      updateEvent: async () => {
+        throw new Error("event should not be updated");
+      },
+    },
+  );
+  const deleteResponse = await handleAdminDeleteEventRequest(
+    new Request("http://localhost:3000/api/admin/events/event_1", {
+      method: "DELETE",
+    }),
+    eventRouteContext,
+    {
+      ...deps,
+      deleteEvent: async () => {
+        throw new Error("event should not be deleted");
+      },
+    },
+  );
+
+  assert.equal(updateResponse.status, 403);
+  assert.equal(deleteResponse.status, 403);
 });
 
 test("admin can list events through the route handler", async () => {

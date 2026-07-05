@@ -90,6 +90,16 @@ function createCheckInTx({
     expiresAt: Date;
     status: RecheckStatus;
   } | null = null;
+  let createdDeviceData: {
+    userId: string;
+    deviceId: string;
+    status: DeviceStatus;
+    userAgent?: string | null;
+    firstSeenAt: Date;
+    lastSeenAt: Date;
+    approvedAt: Date | null;
+    rejectedAt: Date | null;
+  } | null = null;
 
   const tx = {
     eventAssignment: {
@@ -123,8 +133,17 @@ function createCheckInTx({
           ? {
               id: "user_device_1",
               status: deviceStatus,
+              approvedAt: deviceStatus === DeviceStatus.TRUSTED ? now : null,
+              rejectedAt: deviceStatus === DeviceStatus.REJECTED ? now : null,
             }
           : null,
+      create: async ({ data }: { data: typeof createdDeviceData }) => {
+        createdDeviceData = data;
+
+        return {
+          id: "user_device_2",
+        };
+      },
       update: async () => ({
         id: "user_device_1",
       }),
@@ -186,6 +205,7 @@ function createCheckInTx({
     getAssignmentUpdateData: () => assignmentUpdateData,
     getProofCreateData: () => proofCreateData,
     getRecheckCreateData: () => recheckCreateData,
+    getCreatedDeviceData: () => createdDeviceData,
   };
 }
 
@@ -253,6 +273,85 @@ test("untrusted device blocks check-in before proof creation", async () => {
         now,
       }),
     assertCheckInError("DEVICE_NOT_TRUSTED"),
+  );
+
+  assert.equal(getProofCreateData(), null);
+});
+
+test("new device creates pending UserDevice and blocks check-in", async () => {
+  const { tx, getCreatedDeviceData, getProofCreateData } = createCheckInTx({
+    deviceStatus: null,
+  });
+
+  await assert.rejects(
+    () =>
+      checkInToEventInTransaction(tx as never, {
+        eventId: "event_1",
+        employeeId: "employee_1",
+        input: baseInput,
+        now,
+        userAgent: "Test Browser",
+      }),
+    (error: unknown) =>
+      error instanceof CheckInServiceError &&
+      error.code === "DEVICE_NOT_TRUSTED" &&
+      error.message === "This device is waiting for admin approval.",
+  );
+
+  assert.deepEqual(getCreatedDeviceData(), {
+    userId: "employee_1",
+    deviceId,
+    status: DeviceStatus.PENDING,
+    userAgent: "Test Browser",
+    firstSeenAt: now,
+    lastSeenAt: now,
+    approvedAt: null,
+    rejectedAt: null,
+  });
+  assert.equal(getProofCreateData(), null);
+});
+
+test("new device can return a committed rejection marker instead of throwing inside transaction", async () => {
+  const { tx, getCreatedDeviceData, getProofCreateData } = createCheckInTx({
+    deviceStatus: null,
+  });
+
+  const result = await checkInToEventInTransaction(tx as never, {
+    eventId: "event_1",
+    employeeId: "employee_1",
+    input: baseInput,
+    now,
+    persistDeviceRejection: true,
+    userAgent: "Test Browser",
+  });
+
+  assert.deepEqual(result, {
+    trusted: false,
+    status: 403,
+    code: "DEVICE_NOT_TRUSTED",
+    message: "This device is waiting for admin approval.",
+  });
+  assert.equal(getCreatedDeviceData()?.status, DeviceStatus.PENDING);
+  assert.equal(getProofCreateData(), null);
+});
+
+test("rejected device blocks check-in with rejected message", async () => {
+  const { tx, getProofCreateData } = createCheckInTx({
+    deviceStatus: DeviceStatus.REJECTED,
+  });
+
+  await assert.rejects(
+    () =>
+      checkInToEventInTransaction(tx as never, {
+        eventId: "event_1",
+        employeeId: "employee_1",
+        input: baseInput,
+        now,
+      }),
+    (error: unknown) =>
+      error instanceof CheckInServiceError &&
+      error.code === "DEVICE_REJECTED" &&
+      error.message === "This device was rejected by an admin.",
   );
 
   assert.equal(getProofCreateData(), null);

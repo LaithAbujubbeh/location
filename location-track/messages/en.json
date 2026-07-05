@@ -300,11 +300,14 @@
       "notSubmitted": "Not submitted yet",
       "radiusMeters": "{value} meters",
       "timelinePreviewUnavailable": "Timeline preview could not be loaded, so latest recheck statuses may be unavailable.",
+      "deleteConfirm": "Delete this event and its assignments? This cannot be undone.",
       "sections": {
         "employeesDescription": "Track each employee assignment and latest attendance signals.",
         "employeesTitle": "Employee status",
         "locationDescription": "Selected coordinates and attendance radius.",
         "locationTitle": "Location summary",
+        "managementDescription": "Edit core event settings, change status, or remove the event.",
+        "managementTitle": "Event management",
         "rechecksDescription": "Fixed recheck windows configured for this event.",
         "rechecksTitle": "Fixed recheck slots",
         "summaryDescription": "Event configuration and attendance requirements.",
@@ -327,14 +330,38 @@
         "latestRecheck": "Latest recheck",
         "latitude": "Latitude",
         "location": "Location",
+        "locationName": "Location name",
         "longitude": "Longitude",
+        "name": "Event name",
         "radius": "Radius",
+        "radiusMeters": "Radius meters",
         "requireCheckout": "Require checkout",
         "requirePhoto": "Require photo",
+        "endsAt": "Ends at",
         "slotExpiresAt": "Expires at",
         "slotStartsAt": "Starts at",
+        "startsAt": "Starts at",
         "status": "Status",
         "timeWindow": "Time"
+      },
+      "validation": {
+        "endsAfterStart": "End time must be after start time.",
+        "latitude": "Latitude must be between -90 and 90.",
+        "longitude": "Longitude must be between -180 and 180.",
+        "radius": "Radius must be a whole number between 1 and 50000 meters.",
+        "required": "Fill in the required event fields."
+      },
+      "backendErrors": {
+        "EVENT_NOT_FOUND": "Event was not found.",
+        "FORBIDDEN": "Administrator access is required.",
+        "INVALID_JSON": "Event request was not valid JSON.",
+        "REQUEST_FAILED": "Event request failed.",
+        "UNAUTHORIZED": "Sign in again before managing events.",
+        "VALIDATION_ERROR": "The submitted event data was not accepted."
+      },
+      "errors": {
+        "unknownDeleteError": "Event could not be deleted. Try again.",
+        "unknownUpdateError": "Event could not be saved. Try again."
       },
       "filters": {
         "allStatuses": "All statuses",
@@ -351,8 +378,14 @@
       },
       "actions": {
         "backToEvents": "Back to events",
+        "delete": "Delete event",
+        "deleting": "Deleting",
         "refresh": "Refresh",
         "retry": "Try again",
+        "save": "Save changes",
+        "saving": "Saving",
+        "setActive": "Set active",
+        "setInactive": "Set inactive",
         "viewTimeline": "View timeline"
       }
     },
@@ -553,7 +586,8 @@
       },
       "backendErrors": {
         "ALREADY_CHECKED_IN": "Already checked in.",
-        "DEVICE_NOT_TRUSTED": "This device is not trusted yet. Ask an admin to approve it before checking in.",
+        "DEVICE_NOT_TRUSTED": "This device needs admin approval before you can continue.",
+        "DEVICE_REJECTED": "This device was rejected by an admin.",
         "EVENT_NOT_OPEN_FOR_CHECK_IN": "Event is not active for check-in right now.",
         "FORBIDDEN": "You do not have permission to check in.",
         "PHOTO_REQUIRED": "Photo proof is required.",
@@ -650,7 +684,7 @@
         "notCheckedIn": "You must check in before checking out.",
         "photoUploadNotConfigured": "Photo upload is not configured yet.",
         "poorAccuracy": "GPS accuracy is poor. The backend may mark this proof as suspicious or reject it.",
-        "untrustedDevice": "This device is not trusted yet. Ask an admin to approve it before checking out."
+        "untrustedDevice": "This device needs admin approval before you can continue."
       },
       "locationErrors": {
         "PERMISSION_DENIED": "Location permission was denied. Allow location access in your browser and try again.",
@@ -665,7 +699,8 @@
         "ASSIGNMENT_NOT_IN_PROGRESS": "This assignment is not eligible for checkout.",
         "CHECKOUT_NOT_ALLOWED": "Checkout is not required for this event.",
         "CHECK_IN_REQUIRED": "You must check in before checking out.",
-        "DEVICE_NOT_TRUSTED": "This device is not trusted yet. Ask an admin to approve it before checking out.",
+        "DEVICE_NOT_TRUSTED": "This device needs admin approval before you can continue.",
+        "DEVICE_REJECTED": "This device was rejected by an admin.",
         "EVENT_NOT_OPEN_FOR_CHECK_OUT": "Event is not active for checkout right now.",
         "FORBIDDEN": "You do not have permission to check out.",
         "INVALID_JSON": "Checkout request was not valid JSON.",
@@ -769,7 +804,8 @@
       },
       "backendErrors": {
         "ASSIGNMENT_NOT_IN_PROGRESS": "You must be checked in before submitting this recheck.",
-        "DEVICE_NOT_TRUSTED": "This device is not trusted yet. Ask an admin to approve it before submitting a recheck.",
+        "DEVICE_NOT_TRUSTED": "This device needs admin approval before you can continue.",
+        "DEVICE_REJECTED": "This device was rejected by an admin.",
         "FORBIDDEN": "You do not have permission to submit this recheck.",
         "PHOTO_REQUIRED": "Photo proof is required.",
         "RECHECK_ALREADY_SUBMITTED": "This recheck has already been submitted.",

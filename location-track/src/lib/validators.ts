@@ -1,4 +1,4 @@
-import { AssignmentStatus, DeviceStatus, UserRole } from "@prisma/client";
+import { AssignmentStatus, DeviceStatus, EventStatus, UserRole } from "@prisma/client";
 import { z } from "zod";
 
 const dateString = z
@@ -98,6 +98,31 @@ export type EmployeeEventDetailQueryInput = z.infer<
 >;
 
 export type CreateEventInput = z.infer<typeof createEventSchema>;
+
+export const updateEventSchema = z
+  .object({
+    name: z.string().trim().min(1).max(160),
+    locationName: z.string().trim().min(1).max(240),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    radiusMeters: z.number().int().min(1).max(50000),
+    startsAt: dateString,
+    endsAt: dateString,
+    requirePhoto: z.boolean().default(false),
+    requireCheckout: z.boolean().default(true),
+    status: z.enum(EventStatus),
+  })
+  .superRefine((value, context) => {
+    if (value.endsAt <= value.startsAt) {
+      context.addIssue({
+        code: "custom",
+        path: ["endsAt"],
+        message: "endsAt must be after startsAt.",
+      });
+    }
+  });
+
+export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 
 const paginationNumber = (defaultValue: number, maxValue: number) =>
   z
