@@ -51,7 +51,10 @@ type LocationPickerMapProps = {
   radiusMeters: number;
 };
 
-function hasSelectedLocation(latitude: number | null, longitude: number | null) {
+function hasSelectedLocation(
+  latitude: number | null,
+  longitude: number | null,
+) {
   return latitude !== null && longitude !== null;
 }
 
@@ -284,7 +287,11 @@ export function LocationPickerMap({
         <p className="text-xs leading-5 text-text-muted">
           {selectedCenter ? labels.selectedLocation : labels.defaultHint}
         </p>
-        <Button className="w-full sm:w-auto" onClick={useCurrentLocation} type="button">
+        <Button
+          className="w-full sm:w-auto"
+          onClick={useCurrentLocation}
+          type="button"
+        >
           {labels.useCurrentLocation}
         </Button>
       </div>
