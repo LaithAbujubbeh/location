@@ -77,6 +77,8 @@ export type EmployeeCheckInPayload = {
 
 export type EmployeeRecheckSubmitPayload = EmployeeCheckInPayload;
 
+export type EmployeeCheckOutPayload = EmployeeCheckInPayload;
+
 export type EmployeeCheckInResult = {
   assignment: {
     id: string;
@@ -118,6 +120,19 @@ export type EmployeeRecheckSubmitResult = {
     startsAt: string;
     expiresAt: string;
     submittedAt: string;
+  };
+  proof: EmployeeCheckInResult["proof"];
+  verification: EmployeeCheckInResult["verification"];
+};
+
+export type EmployeeCheckOutResult = {
+  assignment: {
+    id: string;
+    status: AssignmentStatus;
+    checkedInAt: string | null;
+    checkedOutAt: string;
+    completedAt: string | null;
+    failureReason: string | null;
   };
   proof: EmployeeCheckInResult["proof"];
   verification: EmployeeCheckInResult["verification"];
@@ -218,6 +233,38 @@ export async function submitEmployeeRecheck({
     },
   );
   const body = (await response.json()) as ApiBody<EmployeeRecheckSubmitResult>;
+
+  if (!response.ok || !body.ok) {
+    const error = body.ok
+      ? { code: "REQUEST_FAILED", message: "Request failed." }
+      : body.error;
+
+    throw new EmployeeEventApiError(error.code, error.message, response.status);
+  }
+
+  return body.data;
+}
+
+export async function submitEmployeeCheckOut({
+  eventId,
+  payload,
+}: {
+  eventId: string;
+  payload: EmployeeCheckOutPayload;
+}) {
+  const response = await fetch(
+    `/api/employee/events/${encodeURIComponent(eventId)}/check-out`,
+    {
+      method: "POST",
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+  const body = (await response.json()) as ApiBody<EmployeeCheckOutResult>;
 
   if (!response.ok || !body.ok) {
     const error = body.ok

@@ -210,6 +210,118 @@
         "title": "Check-in submitted"
       }
     },
+    "checkOut": {
+      "title": "Check out",
+      "description": "Confirm your event status, capture a fresh GPS location, and submit checkout before leaving.",
+      "backToEvent": "Back to event details",
+      "noLocation": "Location not specified",
+      "meters": "meters",
+      "devicePending": "Preparing device ID",
+      "emptyLocation": "Capture your current location before reviewing GPS accuracy.",
+      "notCheckedIn": "Not checked in",
+      "notSubmitted": "Not submitted yet",
+      "checkoutRequired": "Checkout required",
+      "checkoutNotRequired": "Checkout not required",
+      "rechecksTitle": "Fixed recheck slots",
+      "rechecksDescription": "These recheck times were defined by the admin.",
+      "noRechecksTitle": "No rechecks planned",
+      "noRechecksDescription": "This event does not have fixed recheck slots.",
+      "detailsErrorTitle": "Event details could not be loaded",
+      "detailsErrorDescription": "Refresh the page or return to your event details.",
+      "steps": {
+        "confirmTitle": "Confirm checkout",
+        "confirmDescription": "Review your assignment status, event location, and checkout requirement.",
+        "locationTitle": "Get current location",
+        "locationDescription": "Use your browser GPS with high accuracy enabled.",
+        "reviewTitle": "Review GPS accuracy",
+        "reviewDescription": "Confirm the captured coordinates, accuracy, and timestamp.",
+        "photoTitle": "Add photo proof",
+        "photoDescription": "Photo proof is only available after an upload provider is configured.",
+        "submitTitle": "Submit checkout",
+        "submitDescription": "Send this GPS proof to the secure checkout endpoint."
+      },
+      "stepStatus": {
+        "pending": "Pending",
+        "ready": "Ready",
+        "complete": "Complete",
+        "blocked": "Blocked"
+      },
+      "fields": {
+        "accuracyMeters": "Accuracy",
+        "assignmentStatus": "Assignment status",
+        "capturedAt": "Captured",
+        "checkIn": "Check-in time",
+        "checkout": "Checkout",
+        "checkoutRequirement": "Checkout requirement",
+        "deviceId": "Device ID",
+        "distanceMeters": "Distance",
+        "event": "Event",
+        "latitude": "Latitude",
+        "location": "Location",
+        "longitude": "Longitude",
+        "photoRequirement": "Photo proof",
+        "proofStatus": "Proof status",
+        "radius": "Allowed radius",
+        "submittedAt": "Submitted",
+        "timeWindow": "Time"
+      },
+      "photo": {
+        "required": "Required",
+        "notRequired": "Not required",
+        "notConfiguredOptional": "Photo upload is not configured yet. This event does not require photo proof, so you can continue without it."
+      },
+      "warnings": {
+        "alreadyCheckedOut": "This assignment is already checked out.",
+        "checkoutNotRequired": "Checkout is not required or is disabled for this event.",
+        "eventNotActive": "Event is not active for checkout right now.",
+        "locationRequired": "Capture your current location before submitting.",
+        "notCheckedIn": "You must check in before checking out.",
+        "photoUploadNotConfigured": "Photo upload is not configured yet.",
+        "poorAccuracy": "GPS accuracy is poor. The backend may mark this proof as suspicious or reject it.",
+        "untrustedDevice": "This device is not trusted yet. Ask an admin to approve it before checking out."
+      },
+      "locationErrors": {
+        "PERMISSION_DENIED": "Location permission was denied. Allow location access in your browser and try again.",
+        "POSITION_UNAVAILABLE": "Location is unavailable. Check GPS, Wi-Fi, or mobile location services and try again.",
+        "TIMEOUT": "Location capture timed out. Move near a window or open area and try again.",
+        "UNSUPPORTED": "This browser does not support geolocation.",
+        "UNKNOWN": "Location could not be captured. Try again."
+      },
+      "backendErrors": {
+        "ALREADY_CHECKED_OUT": "Already checked out.",
+        "ASSIGNMENT_NOT_FOUND": "Assigned event was not found.",
+        "ASSIGNMENT_NOT_IN_PROGRESS": "This assignment is not eligible for checkout.",
+        "CHECKOUT_NOT_ALLOWED": "Checkout is not required for this event.",
+        "CHECK_IN_REQUIRED": "You must check in before checking out.",
+        "DEVICE_NOT_TRUSTED": "This device is not trusted yet. Ask an admin to approve it before checking out.",
+        "EVENT_NOT_OPEN_FOR_CHECK_OUT": "Event is not active for checkout right now.",
+        "FORBIDDEN": "You do not have permission to check out.",
+        "INVALID_JSON": "Checkout request was not valid JSON.",
+        "PHOTO_REQUIRED": "Photo proof is required.",
+        "REQUEST_FAILED": "Checkout failed.",
+        "UNAUTHORIZED": "Sign in again before checking out.",
+        "VALIDATION_ERROR": "The submitted checkout data was not accepted."
+      },
+      "errors": {
+        "deviceUnavailable": "Device ID could not be prepared in this browser.",
+        "missingLocationOrDevice": "Location and device ID are required before checkout.",
+        "unknownSubmitError": "Checkout could not be submitted. Try again."
+      },
+      "actions": {
+        "backToDetails": "Back to event details",
+        "getLocation": "Get current location",
+        "refreshLocation": "Refresh location",
+        "retry": "Try again",
+        "submit": "Submit checkout",
+        "submitting": "Submitting"
+      },
+      "result": {
+        "acceptedDescription": "Checkout was accepted and this assignment is complete.",
+        "rejectedDescription": "The checkout proof was recorded, but the assignment did not complete.",
+        "suspiciousDescription": "Checkout was submitted and needs review.",
+        "title": "Checkout submitted"
+      }
+    },
     "recheck": {
       "title": "Submit recheck",
       "description": "Confirm the active recheck with a fresh GPS location and device proof.",

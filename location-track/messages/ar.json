@@ -210,6 +210,118 @@
         "title": "تم إرسال تسجيل الحضور"
       }
     },
+    "checkOut": {
+      "title": "تسجيل الخروج",
+      "description": "أكد حالة الفعالية، والتقط موقع GPS حديثا، ثم أرسل تسجيل الخروج قبل المغادرة.",
+      "backToEvent": "العودة إلى تفاصيل الفعالية",
+      "noLocation": "لم يتم تحديد الموقع",
+      "meters": "متر",
+      "devicePending": "جار تجهيز معرف الجهاز",
+      "emptyLocation": "التقط موقعك الحالي قبل مراجعة دقة GPS.",
+      "notCheckedIn": "لم يتم تسجيل الحضور",
+      "notSubmitted": "لم يتم الإرسال بعد",
+      "checkoutRequired": "تسجيل الخروج مطلوب",
+      "checkoutNotRequired": "تسجيل الخروج غير مطلوب",
+      "rechecksTitle": "مواعيد إعادة التحقق الثابتة",
+      "rechecksDescription": "تم تحديد هذه المواعيد من قبل المدير.",
+      "noRechecksTitle": "لا توجد إعادة تحقق مخططة",
+      "noRechecksDescription": "لا تحتوي هذه الفعالية على مواعيد إعادة تحقق ثابتة.",
+      "detailsErrorTitle": "تعذر تحميل تفاصيل الفعالية",
+      "detailsErrorDescription": "حدث الصفحة أو عد إلى تفاصيل الفعالية.",
+      "steps": {
+        "confirmTitle": "تأكيد تسجيل الخروج",
+        "confirmDescription": "راجع حالة التعيين وموقع الفعالية ومتطلب تسجيل الخروج.",
+        "locationTitle": "التقاط الموقع الحالي",
+        "locationDescription": "استخدم GPS من المتصفح مع تفعيل الدقة العالية.",
+        "reviewTitle": "مراجعة دقة GPS",
+        "reviewDescription": "تأكد من الإحداثيات والدقة ووقت الالتقاط.",
+        "photoTitle": "إضافة إثبات الصورة",
+        "photoDescription": "إثبات الصورة متاح فقط بعد إعداد مزود رفع الصور.",
+        "submitTitle": "إرسال تسجيل الخروج",
+        "submitDescription": "أرسل إثبات GPS هذا إلى نقطة تسجيل الخروج الآمنة."
+      },
+      "stepStatus": {
+        "pending": "قيد الانتظار",
+        "ready": "جاهز",
+        "complete": "مكتمل",
+        "blocked": "محظور"
+      },
+      "fields": {
+        "accuracyMeters": "الدقة",
+        "assignmentStatus": "حالة التعيين",
+        "capturedAt": "وقت الالتقاط",
+        "checkIn": "وقت تسجيل الحضور",
+        "checkout": "تسجيل الخروج",
+        "checkoutRequirement": "متطلب تسجيل الخروج",
+        "deviceId": "معرف الجهاز",
+        "distanceMeters": "المسافة",
+        "event": "الفعالية",
+        "latitude": "خط العرض",
+        "location": "الموقع",
+        "longitude": "خط الطول",
+        "photoRequirement": "إثبات الصورة",
+        "proofStatus": "حالة الإثبات",
+        "radius": "النطاق المسموح",
+        "submittedAt": "تم الإرسال",
+        "timeWindow": "الوقت"
+      },
+      "photo": {
+        "required": "مطلوب",
+        "notRequired": "غير مطلوب",
+        "notConfiguredOptional": "لم يتم إعداد رفع الصور بعد. هذه الفعالية لا تتطلب إثبات صورة، لذلك يمكنك المتابعة بدونه."
+      },
+      "warnings": {
+        "alreadyCheckedOut": "تم تسجيل الخروج لهذا التعيين مسبقا.",
+        "checkoutNotRequired": "تسجيل الخروج غير مطلوب أو غير مفعل لهذه الفعالية.",
+        "eventNotActive": "الفعالية غير متاحة لتسجيل الخروج الآن.",
+        "locationRequired": "التقط موقعك الحالي قبل الإرسال.",
+        "notCheckedIn": "يجب تسجيل الحضور قبل تسجيل الخروج.",
+        "photoUploadNotConfigured": "لم يتم إعداد رفع الصور بعد.",
+        "poorAccuracy": "دقة GPS ضعيفة. قد يضع الخادم هذا الإثبات قيد المراجعة أو يرفضه.",
+        "untrustedDevice": "هذا الجهاز غير موثوق بعد. اطلب من المدير الموافقة عليه قبل تسجيل الخروج."
+      },
+      "locationErrors": {
+        "PERMISSION_DENIED": "تم رفض إذن الموقع. اسمح بالوصول إلى الموقع من المتصفح ثم حاول مرة أخرى.",
+        "POSITION_UNAVAILABLE": "الموقع غير متاح. تحقق من GPS أو Wi-Fi أو خدمات الموقع ثم حاول مرة أخرى.",
+        "TIMEOUT": "انتهت مهلة التقاط الموقع. اقترب من نافذة أو مكان مفتوح ثم حاول مرة أخرى.",
+        "UNSUPPORTED": "هذا المتصفح لا يدعم تحديد الموقع.",
+        "UNKNOWN": "تعذر التقاط الموقع. حاول مرة أخرى."
+      },
+      "backendErrors": {
+        "ALREADY_CHECKED_OUT": "تم تسجيل الخروج مسبقا.",
+        "ASSIGNMENT_NOT_FOUND": "لم يتم العثور على الفعالية المعينة.",
+        "ASSIGNMENT_NOT_IN_PROGRESS": "هذا التعيين غير مؤهل لتسجيل الخروج.",
+        "CHECKOUT_NOT_ALLOWED": "تسجيل الخروج غير مطلوب لهذه الفعالية.",
+        "CHECK_IN_REQUIRED": "يجب تسجيل الحضور قبل تسجيل الخروج.",
+        "DEVICE_NOT_TRUSTED": "هذا الجهاز غير موثوق بعد. اطلب من المدير الموافقة عليه قبل تسجيل الخروج.",
+        "EVENT_NOT_OPEN_FOR_CHECK_OUT": "الفعالية غير متاحة لتسجيل الخروج الآن.",
+        "FORBIDDEN": "ليست لديك صلاحية تسجيل الخروج.",
+        "INVALID_JSON": "طلب تسجيل الخروج ليس بصيغة JSON صحيحة.",
+        "PHOTO_REQUIRED": "إثبات الصورة مطلوب.",
+        "REQUEST_FAILED": "فشل تسجيل الخروج.",
+        "UNAUTHORIZED": "سجل الدخول مرة أخرى قبل تسجيل الخروج.",
+        "VALIDATION_ERROR": "لم يتم قبول بيانات تسجيل الخروج المرسلة."
+      },
+      "errors": {
+        "deviceUnavailable": "تعذر تجهيز معرف الجهاز في هذا المتصفح.",
+        "missingLocationOrDevice": "الموقع ومعرف الجهاز مطلوبان قبل تسجيل الخروج.",
+        "unknownSubmitError": "تعذر إرسال تسجيل الخروج. حاول مرة أخرى."
+      },
+      "actions": {
+        "backToDetails": "العودة إلى تفاصيل الفعالية",
+        "getLocation": "التقاط الموقع الحالي",
+        "refreshLocation": "تحديث الموقع",
+        "retry": "حاول مرة أخرى",
+        "submit": "إرسال تسجيل الخروج",
+        "submitting": "جار الإرسال"
+      },
+      "result": {
+        "acceptedDescription": "تم قبول تسجيل الخروج واكتمل هذا التعيين.",
+        "rejectedDescription": "تم تسجيل إثبات الخروج، لكن التعيين لم يكتمل.",
+        "suspiciousDescription": "تم إرسال تسجيل الخروج ويحتاج إلى مراجعة.",
+        "title": "تم إرسال تسجيل الخروج"
+      }
+    },
     "recheck": {
       "title": "إرسال إعادة التحقق",
       "description": "أكد إعادة التحقق النشطة بموقع GPS حديث وإثبات الجهاز.",
