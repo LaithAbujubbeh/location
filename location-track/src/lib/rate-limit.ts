@@ -109,6 +109,11 @@ export const rateLimitPolicies = {
     limit: 20,
     windowMs: 60 * 60 * 1000,
   },
+  proofPhotoUpload: {
+    name: "proof-photo-upload",
+    limit: 10,
+    windowMs: 5 * 60 * 1000,
+  },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 const defaultRateLimitStore = new InMemoryRateLimitStore();

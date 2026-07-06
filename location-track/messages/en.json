@@ -284,7 +284,7 @@
         "coordinates": "Coordinates are filled from the map and can be edited manually if needed.",
         "employeeIds": "Selected employees are submitted as employee IDs.",
         "requireCheckout": "Employees must submit checkout before leaving.",
-        "requirePhoto": "Photo upload is not configured yet, but the backend can require a photo URL later."
+        "requirePhoto": "Employees must attach a proof photo when submitting check-in, recheck, or checkout proof."
       },
       "validation": {
         "employeeIds": "Add at least one employee ID.",
@@ -587,7 +587,7 @@
         "reviewTitle": "Review location accuracy",
         "reviewDescription": "Confirm the captured coordinates, accuracy, and timestamp.",
         "photoTitle": "Add photo proof",
-        "photoDescription": "Photo proof is only available after an upload provider is configured.",
+        "photoDescription": "Select a JPG, PNG, or WebP image up to 5MB when photo proof is required.",
         "submitTitle": "Submit check-in",
         "submitDescription": "Send this GPS proof to the secure check-in endpoint."
       },
@@ -613,14 +613,15 @@
       "photo": {
         "required": "Required",
         "notRequired": "Not required",
-        "notConfiguredOptional": "Photo upload is not configured yet. This event does not require photo proof, so you can continue without it."
+        "notConfiguredOptional": "Photo proof is optional for this event. You can attach one before submitting if needed."
       },
       "warnings": {
         "alreadyCheckedIn": "This assignment is already checked in or is no longer eligible for check-in.",
         "eventNotActive": "Event is not active for check-in right now.",
         "locationRequired": "Capture your current location before submitting.",
-        "photoUploadNotConfigured": "Photo upload is not configured yet.",
-        "poorAccuracy": "GPS accuracy is poor. The backend may mark this proof as suspicious or reject it."
+        "photoUploadNotConfigured": "Photo proof is required. Select an image before submitting.",
+        "poorAccuracy": "GPS accuracy is poor. The backend may mark this proof as suspicious or reject it.",
+        "photoRequired": "Photo proof is required. Select an image before submitting."
       },
       "locationErrors": {
         "PERMISSION_DENIED": "Location permission was denied. Allow location access in your browser and try again.",
@@ -687,7 +688,7 @@
         "reviewTitle": "Review GPS accuracy",
         "reviewDescription": "Confirm the captured coordinates, accuracy, and timestamp.",
         "photoTitle": "Add photo proof",
-        "photoDescription": "Photo proof is only available after an upload provider is configured.",
+        "photoDescription": "Select a JPG, PNG, or WebP image up to 5MB when photo proof is required.",
         "submitTitle": "Submit checkout",
         "submitDescription": "Send this GPS proof to the secure checkout endpoint."
       },
@@ -719,7 +720,7 @@
       "photo": {
         "required": "Required",
         "notRequired": "Not required",
-        "notConfiguredOptional": "Photo upload is not configured yet. This event does not require photo proof, so you can continue without it."
+        "notConfiguredOptional": "Photo proof is optional for this event. You can attach one before submitting if needed."
       },
       "warnings": {
         "alreadyCheckedOut": "This assignment is already checked out.",
@@ -727,9 +728,10 @@
         "eventNotActive": "Event is not active for checkout right now.",
         "locationRequired": "Capture your current location before submitting.",
         "notCheckedIn": "You must check in before checking out.",
-        "photoUploadNotConfigured": "Photo upload is not configured yet.",
+        "photoUploadNotConfigured": "Photo proof is required. Select an image before submitting.",
         "poorAccuracy": "GPS accuracy is poor. The backend may mark this proof as suspicious or reject it.",
-        "untrustedDevice": "This device needs admin approval before you can continue."
+        "untrustedDevice": "This device needs admin approval before you can continue.",
+        "photoRequired": "Photo proof is required. Select an image before submitting."
       },
       "locationErrors": {
         "PERMISSION_DENIED": "Location permission was denied. Allow location access in your browser and try again.",
@@ -799,7 +801,7 @@
         "reviewTitle": "Review location accuracy",
         "reviewDescription": "Confirm the captured coordinates, accuracy, and timestamp.",
         "photoTitle": "Add photo proof",
-        "photoDescription": "Photo proof is only available after an upload provider is configured.",
+        "photoDescription": "Select a JPG, PNG, or WebP image up to 5MB when photo proof is required.",
         "submitTitle": "Submit recheck",
         "submitDescription": "Send this GPS proof to the secure recheck endpoint."
       },
@@ -828,7 +830,7 @@
       "photo": {
         "required": "Required",
         "notRequired": "Not required",
-        "notConfiguredOptional": "Photo upload is not configured yet. This event does not require photo proof, so you can continue without it."
+        "notConfiguredOptional": "Photo proof is optional for this event. You can attach one before submitting if needed."
       },
       "warnings": {
         "alreadySubmitted": "This recheck has already been submitted.",
@@ -837,8 +839,9 @@
         "locationRequired": "Capture your current location before submitting.",
         "noRecheck": "There is no planned recheck available for this event.",
         "notActiveYet": "This recheck is not active yet.",
-        "photoUploadNotConfigured": "Photo upload is not configured yet.",
-        "poorAccuracy": "GPS accuracy is poor. The backend may mark this proof as suspicious or reject it."
+        "photoUploadNotConfigured": "Photo proof is required. Select an image before submitting.",
+        "poorAccuracy": "GPS accuracy is poor. The backend may mark this proof as suspicious or reject it.",
+        "photoRequired": "Photo proof is required. Select an image before submitting."
       },
       "locationErrors": {
         "PERMISSION_DENIED": "Location permission was denied. Allow location access in your browser and try again.",
@@ -880,6 +883,25 @@
         "rejectedDescription": "The proof was recorded, but this recheck did not pass.",
         "suspiciousDescription": "Your recheck was submitted and needs review.",
         "title": "Recheck submitted"
+      }
+    },
+    "proofPhoto": {
+      "title": "Proof photo",
+      "help": "Use a JPG, PNG, or WebP image up to 5MB. The upload is stored with the proof URL only.",
+      "select": "Select photo",
+      "change": "Change photo",
+      "remove": "Remove photo",
+      "selected": "Selected: {name}",
+      "previewAlt": "Selected proof photo preview",
+      "required": "Required",
+      "optional": "Optional",
+      "uploading": "Uploading photo...",
+      "uploaded": "Photo uploaded",
+      "errors": {
+        "required": "Select a proof photo before submitting.",
+        "unsupportedType": "Select a JPEG, PNG, or WebP image.",
+        "tooLarge": "Select an image that is 5MB or smaller.",
+        "uploadFailed": "Photo upload failed. Try again."
       }
     }
   },

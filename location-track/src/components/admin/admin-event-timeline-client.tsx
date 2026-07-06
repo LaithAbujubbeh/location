@@ -155,14 +155,24 @@ function PhotoLink({
   }
 
   return (
-    <a
-      className="break-all text-primary hover:text-primary-hover"
-      href={photoUrl}
-      rel="noreferrer"
-      target="_blank"
-    >
-      {photoUrl}
-    </a>
+    <div className="grid min-w-0 gap-2">
+      <a href={photoUrl} rel="noreferrer" target="_blank">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt={labels.fields.photoUrl}
+          className="max-h-44 w-full max-w-xs rounded-md border border-border object-contain"
+          src={photoUrl}
+        />
+      </a>
+      <a
+        className="break-all text-primary hover:text-primary-hover"
+        href={photoUrl}
+        rel="noreferrer"
+        target="_blank"
+      >
+        {photoUrl}
+      </a>
+    </div>
   );
 }
 

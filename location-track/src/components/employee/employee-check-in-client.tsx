@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { ProofPhotoField } from "@/components/employee/proof-photo-field";
+import { useProofPhotoUpload } from "@/components/employee/use-proof-photo-upload";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +39,7 @@ type EmployeeCheckInClientProps = {
   eventId: string;
   labels: Messages["employee"]["checkIn"];
   locale: Locale;
+  proofPhotoLabels: Messages["employee"]["proofPhoto"];
   statusLabels: Messages["status"];
 };
 
@@ -326,11 +329,13 @@ function CheckInContent({
   item,
   labels,
   locale,
+  proofPhotoLabels,
   statusLabels,
 }: {
   item: EmployeeEventItem;
   labels: Messages["employee"]["checkIn"];
   locale: Locale;
+  proofPhotoLabels: Messages["employee"]["proofPhoto"];
   statusLabels: Messages["status"];
 }) {
   const queryClient = useQueryClient();
@@ -341,10 +346,15 @@ function CheckInContent({
   const [submitAttemptedWithoutLocation, setSubmitAttemptedWithoutLocation] =
     useState(false);
   const [result, setResult] = useState<EmployeeCheckInResult | null>(null);
+  const proofPhoto = useProofPhotoUpload({
+    assignmentId: item.assignment.id,
+    labels: proofPhotoLabels,
+    proofType: "CHECK_IN",
+  });
 
   const eventOpen = isEventOpenForCheckIn(item);
   const assignmentEligible = isAssignmentEligible(item);
-  const photoBlocked = item.event.requirePhoto;
+  const photoRequired = item.event.requirePhoto;
   const poorAccuracy =
     location && location.accuracyMeters > poorAccuracyThresholdMeters;
 
@@ -359,8 +369,8 @@ function CheckInContent({
       messages.push(labels.warnings.eventNotActive);
     }
 
-    if (photoBlocked) {
-      messages.push(labels.warnings.photoUploadNotConfigured);
+    if (photoRequired && !proofPhoto.file && !proofPhoto.uploadedUrl) {
+      messages.push(labels.warnings.photoRequired);
     }
 
     if (poorAccuracy) {
@@ -377,13 +387,15 @@ function CheckInContent({
     eventOpen,
     labels,
     location,
-    photoBlocked,
+    photoRequired,
     poorAccuracy,
+    proofPhoto.file,
+    proofPhoto.uploadedUrl,
     submitAttemptedWithoutLocation,
   ]);
 
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: ({ photoUrl }: { photoUrl?: string }) => {
       if (!location || !deviceId) {
         throw new Error(labels.errors.missingLocationOrDevice);
       }
@@ -396,6 +408,7 @@ function CheckInContent({
           gpsTimestamp: location.gpsTimestamp,
           latitude: location.latitude,
           longitude: location.longitude,
+          photoUrl,
         },
       });
     },
@@ -445,13 +458,19 @@ function CheckInContent({
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!location) {
       setSubmitAttemptedWithoutLocation(true);
       return;
     }
 
-    mutation.mutate();
+    const photoUrl = await proofPhoto.preparePhotoUrl(photoRequired);
+
+    if (photoUrl === null) {
+      return;
+    }
+
+    mutation.mutate({ photoUrl });
   }
 
   const canSubmit =
@@ -459,7 +478,8 @@ function CheckInContent({
     Boolean(deviceId) &&
     assignmentEligible &&
     eventOpen &&
-    !photoBlocked &&
+    (!photoRequired || Boolean(proofPhoto.file || proofPhoto.uploadedUrl)) &&
+    !proofPhoto.uploading &&
     !mutation.isPending;
   const locationStepStatus = location
     ? labels.stepStatus.complete
@@ -467,9 +487,12 @@ function CheckInContent({
   const reviewStepStatus = location
     ? labels.stepStatus.ready
     : labels.stepStatus.pending;
-  const photoStepStatus = photoBlocked
-    ? labels.stepStatus.blocked
-    : labels.stepStatus.complete;
+  const photoStepStatus =
+    proofPhoto.uploadedUrl || proofPhoto.file
+      ? labels.stepStatus.complete
+      : photoRequired
+        ? labels.stepStatus.pending
+        : labels.stepStatus.ready;
   const submitStepStatus = result
     ? labels.stepStatus.complete
     : canSubmit
@@ -535,7 +558,7 @@ function CheckInContent({
           {warnings.map((warning) => (
             <WarningBox
               key={warning}
-              tone={warning === labels.warnings.photoUploadNotConfigured ? "danger" : "warning"}
+              tone={warning === labels.warnings.photoRequired ? "danger" : "warning"}
             >
               {warning}
             </WarningBox>
@@ -587,11 +610,18 @@ function CheckInContent({
             step={3}
             title={labels.steps.photoTitle}
           >
-            <WarningBox tone={photoBlocked ? "danger" : "info"}>
-              {photoBlocked
-                ? labels.warnings.photoUploadNotConfigured
-                : labels.photo.notConfiguredOptional}
-            </WarningBox>
+            <ProofPhotoField
+              disabled={mutation.isPending}
+              error={proofPhoto.error}
+              fileName={proofPhoto.fileName}
+              labels={proofPhotoLabels}
+              onClear={proofPhoto.clear}
+              onFileChange={proofPhoto.handleFileChange}
+              previewUrl={proofPhoto.previewUrl}
+              required={photoRequired}
+              uploadedUrl={proofPhoto.uploadedUrl}
+              uploading={proofPhoto.uploading}
+            />
           </StepCard>
 
           <StepCard
@@ -600,8 +630,14 @@ function CheckInContent({
             step={4}
             title={labels.steps.submitTitle}
           >
-            <Button className="w-full sm:w-fit" disabled={!canSubmit} onClick={handleSubmit}>
-              {mutation.isPending ? labels.actions.submitting : labels.actions.submit}
+            <Button
+              className="w-full sm:w-fit"
+              disabled={!canSubmit}
+              onClick={() => void handleSubmit()}
+            >
+              {mutation.isPending || proofPhoto.uploading
+                ? labels.actions.submitting
+                : labels.actions.submit}
             </Button>
 
             {mutationError ? (
@@ -675,6 +711,7 @@ export function EmployeeCheckInClient({
   eventId,
   labels,
   locale,
+  proofPhotoLabels,
   statusLabels,
 }: EmployeeCheckInClientProps) {
   const query = useQuery({
@@ -717,6 +754,7 @@ export function EmployeeCheckInClient({
       item={data}
       labels={labels}
       locale={locale}
+      proofPhotoLabels={proofPhotoLabels}
       statusLabels={statusLabels}
     />
   );

@@ -73,6 +73,7 @@ function createCheckInTx({
     },
   };
   let proofCreateData: {
+    photoUrl?: string | null;
     type: ProofType;
     status: ProofStatus;
     rejectionCode: string | null;
@@ -236,7 +237,9 @@ test("employee check-in succeeds inside radius and schedules rechecks", async ()
   assert.equal(result.assignment.checkedInAt, now.toISOString());
   assert.equal(result.proof.type, ProofType.CHECK_IN);
   assert.equal(result.proof.status, ProofStatus.ACCEPTED);
+  assert.equal(result.proof.photoUrl, baseInput.photoUrl);
   assert.equal(getAssignmentUpdateData()?.status, AssignmentStatus.IN_PROGRESS);
+  assert.equal(getProofCreateData()?.photoUrl, baseInput.photoUrl);
   assert.equal(getProofCreateData()?.rejectionCode, null);
   assert.equal(getRecheckCreateData()?.assignmentId, "assignment_1");
   assert.equal(getRecheckCreateData()?.employeeId, "employee_1");

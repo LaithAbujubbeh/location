@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { ProofPhotoField } from "@/components/employee/proof-photo-field";
+import { useProofPhotoUpload } from "@/components/employee/use-proof-photo-upload";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +39,7 @@ type EmployeeCheckOutClientProps = {
   eventId: string;
   labels: Messages["employee"]["checkOut"];
   locale: Locale;
+  proofPhotoLabels: Messages["employee"]["proofPhoto"];
   statusLabels: Messages["status"];
 };
 
@@ -342,11 +345,13 @@ function CheckOutContent({
   item,
   labels,
   locale,
+  proofPhotoLabels,
   statusLabels,
 }: {
   item: EmployeeEventItem;
   labels: Messages["employee"]["checkOut"];
   locale: Locale;
+  proofPhotoLabels: Messages["employee"]["proofPhoto"];
   statusLabels: Messages["status"];
 }) {
   const queryClient = useQueryClient();
@@ -357,6 +362,11 @@ function CheckOutContent({
   const [submitAttemptedWithoutLocation, setSubmitAttemptedWithoutLocation] =
     useState(false);
   const [result, setResult] = useState<EmployeeCheckOutResult | null>(null);
+  const proofPhoto = useProofPhotoUpload({
+    assignmentId: item.assignment.id,
+    labels: proofPhotoLabels,
+    proofType: "CHECK_OUT",
+  });
 
   const eventOpen = isEventOpenForCheckOut(item);
   const assignmentEligible = isAssignmentEligible(item);
@@ -366,8 +376,10 @@ function CheckOutContent({
   const poorAccuracy =
     location && location.accuracyMeters > poorAccuracyThresholdMeters;
 
+  const photoRequired = item.event.requirePhoto;
+
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: ({ photoUrl }: { photoUrl?: string }) => {
       if (!location || !deviceId) {
         throw new Error(labels.errors.missingLocationOrDevice);
       }
@@ -380,6 +392,7 @@ function CheckOutContent({
           gpsTimestamp: location.gpsTimestamp,
           latitude: location.latitude,
           longitude: location.longitude,
+          photoUrl,
         },
       });
     },
@@ -438,8 +451,8 @@ function CheckOutContent({
       messages.push(labels.warnings.eventNotActive);
     }
 
-    if (item.event.requirePhoto) {
-      messages.push(labels.warnings.photoUploadNotConfigured);
+    if (photoRequired && !proofPhoto.file && !proofPhoto.uploadedUrl) {
+      messages.push(labels.warnings.photoRequired);
     }
 
     if (poorAccuracy) {
@@ -459,12 +472,14 @@ function CheckOutContent({
     alreadyCheckedOut,
     checkoutDisabled,
     eventOpen,
-    item.event.requirePhoto,
     labels,
     location,
     mutationError?.code,
     notCheckedIn,
+    photoRequired,
     poorAccuracy,
+    proofPhoto.file,
+    proofPhoto.uploadedUrl,
     submitAttemptedWithoutLocation,
   ]);
 
@@ -481,13 +496,19 @@ function CheckOutContent({
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!location) {
       setSubmitAttemptedWithoutLocation(true);
       return;
     }
 
-    mutation.mutate();
+    const photoUrl = await proofPhoto.preparePhotoUrl(photoRequired);
+
+    if (photoUrl === null) {
+      return;
+    }
+
+    mutation.mutate({ photoUrl });
   }
 
   const canSubmit =
@@ -496,6 +517,8 @@ function CheckOutContent({
     assignmentEligible &&
     item.event.requireCheckout &&
     eventOpen &&
+    (!photoRequired || Boolean(proofPhoto.file || proofPhoto.uploadedUrl)) &&
+    !proofPhoto.uploading &&
     !mutation.isPending;
 
   return (
@@ -577,6 +600,7 @@ function CheckOutContent({
                 warning === labels.warnings.alreadyCheckedOut ||
                 warning === labels.warnings.checkoutNotRequired ||
                 warning === labels.warnings.notCheckedIn ||
+                warning === labels.warnings.photoRequired ||
                 warning === labels.warnings.untrustedDevice
                   ? "danger"
                   : "warning"
@@ -656,18 +680,27 @@ function CheckOutContent({
           <StepCard
             description={labels.steps.photoDescription}
             status={
-              item.event.requirePhoto
-                ? labels.stepStatus.blocked
-                : labels.stepStatus.complete
+              proofPhoto.uploadedUrl || proofPhoto.file
+                ? labels.stepStatus.complete
+                : photoRequired
+                  ? labels.stepStatus.pending
+                  : labels.stepStatus.ready
             }
             step={4}
             title={labels.steps.photoTitle}
           >
-            <WarningBox tone={item.event.requirePhoto ? "danger" : "info"}>
-              {item.event.requirePhoto
-                ? labels.warnings.photoUploadNotConfigured
-                : labels.photo.notConfiguredOptional}
-            </WarningBox>
+            <ProofPhotoField
+              disabled={mutation.isPending}
+              error={proofPhoto.error}
+              fileName={proofPhoto.fileName}
+              labels={proofPhotoLabels}
+              onClear={proofPhoto.clear}
+              onFileChange={proofPhoto.handleFileChange}
+              previewUrl={proofPhoto.previewUrl}
+              required={photoRequired}
+              uploadedUrl={proofPhoto.uploadedUrl}
+              uploading={proofPhoto.uploading}
+            />
           </StepCard>
 
           <StepCard
@@ -682,8 +715,14 @@ function CheckOutContent({
             step={5}
             title={labels.steps.submitTitle}
           >
-            <Button className="w-full sm:w-fit" disabled={!canSubmit} onClick={handleSubmit}>
-              {mutation.isPending ? labels.actions.submitting : labels.actions.submit}
+            <Button
+              className="w-full sm:w-fit"
+              disabled={!canSubmit}
+              onClick={() => void handleSubmit()}
+            >
+              {mutation.isPending || proofPhoto.uploading
+                ? labels.actions.submitting
+                : labels.actions.submit}
             </Button>
 
             {mutationError ? (
@@ -758,6 +797,7 @@ export function EmployeeCheckOutClient({
   eventId,
   labels,
   locale,
+  proofPhotoLabels,
   statusLabels,
 }: EmployeeCheckOutClientProps) {
   const query = useQuery({
@@ -800,6 +840,7 @@ export function EmployeeCheckOutClient({
       item={data}
       labels={labels}
       locale={locale}
+      proofPhotoLabels={proofPhotoLabels}
       statusLabels={statusLabels}
     />
   );

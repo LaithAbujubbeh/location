@@ -43,6 +43,7 @@ export default async function EmployeeCheckInPage({
         eventId={eventId}
         labels={messages.employee.checkIn}
         locale={locale}
+        proofPhotoLabels={messages.employee.proofPhoto}
         statusLabels={messages.status}
       />
     </div>

@@ -43,6 +43,7 @@ export default async function EmployeeRecheckPage({
         eventId={eventId}
         labels={messages.employee.recheck}
         locale={locale}
+        proofPhotoLabels={messages.employee.proofPhoto}
         statusLabels={messages.status}
       />
     </div>

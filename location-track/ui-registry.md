@@ -216,3 +216,23 @@ Last updated: 2026-07-06
 
 **Pattern notes:**
 Sticky mobile app chrome uses `z-[900]` so it stays above Leaflet panes and controls (`z-index: 800`) while remaining below notification dropdown portals (`z-[1300]`) and mobile sidebar overlays (`zIndex: 2000+`). Keep map layering contained below shell chrome rather than raising individual map panes. Employee desktop screens switch from mobile bottom navigation to a `lg:flex` app layout with a `w-64 xl:w-72 border-e border-border bg-surface-elevated` sidebar, a transparent desktop header for utility controls, and a `max-w-6xl` main content column so employee pages do not stretch awkwardly on wide screens. Employee mobile screens use the same hamburger drawer behavior as admin rather than exposing the account panel in the header.
+
+### Proof Photo Upload
+
+File: src/components/employee/proof-photo-field.tsx
+Last updated: 2026-07-06
+
+| Property         | Class           |
+| ---------------- | --------------- |
+| Background       | `bg-surface`, `bg-surface-subtle` |
+| Border           | `border border-border`, `border border-dashed border-border` |
+| Border radius    | `rounded-md` for chooser, preview frame, image, and status pill |
+| Text primary     | `text-foreground` |
+| Text secondary   | `text-text-muted` |
+| Spacing          | `gap-3`, `gap-2`, `px-4 py-3`, `px-3 py-3` |
+| Hover state      | `hover:border-primary`, `hover:text-primary`, `hover:text-primary-hover` |
+| Shadow           | none |
+| Accent usage     | Uploading and uploaded states use `text-primary`; validation errors use `text-danger` |
+
+**Pattern notes:**
+Proof photo upload is a compact, mobile-first field embedded inside proof step cards. The file input is visually represented by a dashed `rounded-md` chooser with a minimum 44px tap target. Selected files render in a bordered `bg-surface` preview block with break-all filename text, full-width mobile remove action, and an `object-contain` image preview capped by max height so photos never overflow the employee proof layout. Uploaded Blob URLs are shown as wrapped primary links; local previews are never persisted.

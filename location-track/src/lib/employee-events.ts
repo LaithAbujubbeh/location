@@ -138,6 +138,11 @@ export type EmployeeCheckOutResult = {
   verification: EmployeeCheckInResult["verification"];
 };
 
+export type ProofPhotoUploadResult = {
+  url: string;
+  pathname: string;
+};
+
 type ApiBody<T> = ApiSuccessBody<T> | ApiErrorBody;
 
 export class EmployeeEventApiError extends Error {
@@ -177,6 +182,39 @@ export function fetchEmployeeEventDetails(eventId: string) {
   return fetchEmployeeApi<EmployeeEventItem>(
     `/api/employee/events/${encodeURIComponent(eventId)}`,
   );
+}
+
+export async function uploadProofPhoto({
+  assignmentId,
+  file,
+  proofType,
+}: {
+  assignmentId: string;
+  file: File;
+  proofType: ProofType;
+}) {
+  const formData = new FormData();
+  formData.set("assignmentId", assignmentId);
+  formData.set("proofType", proofType);
+  formData.set("file", file);
+
+  const response = await fetch("/api/uploads/proof-photo", {
+    method: "POST",
+    cache: "no-store",
+    credentials: "same-origin",
+    body: formData,
+  });
+  const body = (await response.json()) as ApiBody<ProofPhotoUploadResult>;
+
+  if (!response.ok || !body.ok) {
+    const error = body.ok
+      ? { code: "REQUEST_FAILED", message: "Request failed." }
+      : body.error;
+
+    throw new EmployeeEventApiError(error.code, error.message, response.status);
+  }
+
+  return body.data;
 }
 
 export async function submitEmployeeCheckIn({
