@@ -15,6 +15,7 @@ import {
   deleteAllNotifications,
   deleteNotification,
   fetchNotifications,
+  localizedNotificationLink,
   markAllNotificationsRead,
   markNotificationRead,
   notificationQueryKeys,
@@ -56,18 +57,6 @@ function notificationTypeLabel(
   return labels.types[type as keyof Messages["notifications"]["types"]] ?? type;
 }
 
-function localizedLink(link: string | null, locale: Locale) {
-  if (!link) {
-    return null;
-  }
-
-  if (link.startsWith(`/${locale}/`)) {
-    return link;
-  }
-
-  return `/${locale}${link.startsWith("/") ? link : `/${link}`}`;
-}
-
 function BellIcon() {
   return (
     <svg
@@ -103,7 +92,7 @@ function NotificationPreview({
   onOpen: (notification: NotificationRecord) => void;
   pending: boolean;
 }) {
-  const href = localizedLink(notification.link, locale);
+  const href = localizedNotificationLink(notification.link, locale);
   const unread = !notification.readAt;
 
   return (
@@ -314,7 +303,7 @@ export function NotificationBell({ labels, locale }: NotificationBellProps) {
   }, [isOpen, updatePanelPosition]);
 
   async function openNotification(notification: NotificationRecord) {
-    const href = localizedLink(notification.link, locale);
+    const href = localizedNotificationLink(notification.link, locale);
 
     if (!href) {
       return;

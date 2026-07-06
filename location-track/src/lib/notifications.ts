@@ -1,8 +1,10 @@
 import type { NotificationChannel, NotificationType } from "@prisma/client";
 
 import type { ApiErrorBody, ApiSuccessBody } from "@/lib/api-response";
+import type { Locale } from "@/lib/i18n";
 
 export const notificationQueryOptions = {
+  refetchInterval: 15_000,
   refetchOnWindowFocus: true,
   staleTime: 10_000,
 } as const;
@@ -154,4 +156,15 @@ export async function deleteAllNotifications() {
   });
 
   return readNotificationApiBody<DeleteAllNotificationsResult>(response);
+}
+
+export function localizedNotificationLink(link: string | null, locale: Locale) {
+  if (!link) {
+    return null;
+  }
+
+  const normalizedLink = link.startsWith("/") ? link : `/${link}`;
+  const withoutLocale = normalizedLink.replace(/^\/(?:en|ar)(?=\/|$)/, "");
+
+  return `/${locale}${withoutLocale || "/"}`;
 }

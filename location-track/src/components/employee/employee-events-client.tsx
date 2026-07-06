@@ -14,10 +14,10 @@ import {
 import {
   canCheckIn,
   canCheckOut,
+  canSubmitRecheck,
   employeeEventQueryKeys,
   employeeEventQueryOptions,
   fetchEmployeeEvents,
-  findActionableRecheckSlot,
   findNextRecheckSlot,
   formatDateRange,
   formatDateTime,
@@ -65,7 +65,7 @@ function getPrimaryAction(
     };
   }
 
-  if (findActionableRecheckSlot(item.event.recheckSlots)) {
+  if (canSubmitRecheck(item)) {
     return {
       href: `/${locale}/employee/events/${item.event.id}/recheck`,
       label: labels.actions.viewRecheck,

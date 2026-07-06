@@ -28,10 +28,12 @@ export default async function EmployeeLayout({
       labels={{
         appName: messages.common.appName,
         areaLabel: messages.employee.shell.areaLabel,
+        closeMenu: messages.employee.shell.closeMenu,
         language: messages.language,
         logout: messages.auth.logout,
         nav: messages.employee.nav,
         notifications: messages.notifications,
+        openMenu: messages.employee.shell.openMenu,
         signedInAs: messages.auth.signedInAs,
         theme: messages.theme,
       }}

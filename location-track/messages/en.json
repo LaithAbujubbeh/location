@@ -500,7 +500,9 @@
   },
   "employee": {
     "shell": {
-      "areaLabel": "Employee app"
+      "areaLabel": "Employee app",
+      "closeMenu": "Close employee menu",
+      "openMenu": "Open employee menu"
     },
     "nav": {
       "events": "Events"

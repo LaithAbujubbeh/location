@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { EmployeeMobileSidebar } from "@/components/layout/employee-mobile-sidebar";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LanguageToggle } from "@/components/shared/language-toggle";
 import { NotificationBell } from "@/components/shared/notification-bell";
@@ -9,6 +10,8 @@ import type { Locale, Messages } from "@/lib/i18n";
 type EmployeeShellLabels = {
   appName: string;
   areaLabel: string;
+  closeMenu: string;
+  openMenu: string;
   signedInAs: string;
   logout: string;
   nav: {
@@ -46,21 +49,72 @@ export function EmployeeShell({
 }: EmployeeShellProps) {
   const eventsHref = `/${locale}/employee/events`;
   const displayName = user.name || user.email;
+  const navLinkClass =
+    "rounded-md px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-subtle hover:text-foreground";
 
   return (
-    <div className="min-h-dvh overflow-x-clip bg-background text-foreground">
-      <div className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col bg-background">
-        <header className="sticky top-0 z-[900] border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5">
-          <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-            <Link className="grid min-w-0 gap-0.5" href={eventsHref}>
-              <span className="truncate text-base font-semibold">
-                {labels.appName}
-              </span>
-              <span className="truncate text-xs text-text-muted">
-                {labels.areaLabel}
-              </span>
-            </Link>
-            <div className="grid w-full z-40 min-w-0 gap-2 min-[390px]:grid-cols-2 sm:w-[28rem] sm:grid-cols-3">
+    <div className="min-h-dvh overflow-x-clip bg-background text-foreground lg:flex">
+      <aside className="hidden w-64 shrink-0 border-e border-border bg-surface-elevated xl:w-72 lg:flex lg:flex-col">
+        <div className="border-b border-border p-5">
+          <Link className="grid gap-1" href={eventsHref}>
+            <span className="text-lg font-semibold tracking-tight">
+              {labels.appName}
+            </span>
+            <span className="text-sm text-text-muted">{labels.areaLabel}</span>
+          </Link>
+        </div>
+
+        <nav className="grid gap-1 p-3" aria-label={labels.areaLabel}>
+          <Link aria-current="page" className={navLinkClass} href={eventsHref}>
+            {labels.nav.events}
+          </Link>
+        </nav>
+
+        <div className="mt-auto grid gap-4 border-t border-border p-5">
+          <div className="grid min-w-0 gap-1">
+            <p className="text-xs font-medium uppercase text-text-subtle">
+              {labels.signedInAs}
+            </p>
+            <p className="truncate text-sm font-medium text-foreground">
+              {displayName}
+            </p>
+            <p className="truncate text-xs text-text-muted">{user.email}</p>
+          </div>
+          <LogoutButton label={labels.logout} locale={locale} />
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-[900] border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5 lg:static lg:bg-transparent lg:px-6 lg:shadow-none">
+          <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            <div className="flex min-w-0 items-center gap-3 lg:hidden">
+              <EmployeeMobileSidebar
+                eventsHref={eventsHref}
+                labels={{
+                  appName: labels.appName,
+                  areaLabel: labels.areaLabel,
+                  closeMenu: labels.closeMenu,
+                  logout: labels.logout,
+                  nav: labels.nav,
+                  openMenu: labels.openMenu,
+                  signedInAs: labels.signedInAs,
+                }}
+                locale={locale}
+                user={user}
+              />
+              <div className="grid min-w-0 gap-0.5">
+                <Link
+                  className="truncate text-base font-semibold"
+                  href={eventsHref}
+                >
+                  {labels.appName}
+                </Link>
+                <p className="truncate text-xs text-text-muted">
+                  {labels.areaLabel}
+                </p>
+              </div>
+            </div>
+            <div className="z-40 grid w-full min-w-0 gap-2 min-[390px]:grid-cols-2 sm:w-[28rem] sm:grid-cols-3 sm:justify-self-end lg:ms-auto">
               <NotificationBell labels={labels.notifications} locale={locale} />
               <LanguageToggle currentLocale={locale} labels={labels.language} />
               <ThemeToggle
@@ -74,7 +128,7 @@ export function EmployeeShell({
             </div>
           </div>
 
-          <div className="mt-3 grid min-w-0 gap-3 rounded-md border border-border bg-surface px-3 py-3">
+          <div className="mt-3 grid min-w-0 gap-3 rounded-md border border-border bg-surface px-3 py-3 lg:hidden">
             <div className="min-w-0">
               <p className="text-xs font-medium uppercase text-text-subtle">
                 {labels.signedInAs}
@@ -85,15 +139,15 @@ export function EmployeeShell({
           </div>
         </header>
 
-        <main className="flex-1 px-4 pb-28 pt-5 sm:px-5 lg:px-6 xl:px-8">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 sm:px-5 lg:px-8 lg:pb-8 lg:pt-6">
           {children}
         </main>
 
         <nav
           aria-label={labels.areaLabel}
-          className="fixed inset-x-0 bottom-0 z-[900] border-t border-border bg-surface-elevated/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[var(--shadow-md)] backdrop-blur"
+          className="fixed inset-x-0 bottom-0 z-[900] border-t border-border bg-surface-elevated/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[var(--shadow-md)] backdrop-blur lg:hidden"
         >
-          <div className="mx-auto w-full max-w-7xl">
+          <div className="mx-auto w-full max-w-6xl">
             <Link
               aria-current="page"
               className="flex h-11 items-center justify-center rounded-md bg-primary text-sm font-medium text-on-primary shadow-[var(--shadow-sm)]"

@@ -177,10 +177,10 @@ Last updated: 2026-07-05
 **Pattern notes:**
 Notifications live in a topbar bell dropdown rather than a standalone page. The bell is an icon-only `rounded-md border border-border bg-surface` button with an absolute danger unread badge. The dropdown renders through a body portal as a `fixed z-[1300]` panel, calculating its viewport position from the bell button so it stays anchored to the trigger and above Leaflet map panes in both LTR and RTL layouts. On narrow screens it uses 16px side insets; on larger screens it keeps a 384px panel width. Notification previews use compact bordered rows, wrapped message text, full-width mobile actions, localized open actions that mark the item read before navigation, and danger delete actions for one item or all current-user notifications.
 
-### Admin Mobile Sidebar
+### Mobile Sidebars
 
-File: src/components/layout/admin-mobile-sidebar.tsx, src/components/layout/admin-shell.tsx
-Last updated: 2026-07-05
+File: src/components/layout/admin-mobile-sidebar.tsx, src/components/layout/employee-mobile-sidebar.tsx, src/components/layout/admin-shell.tsx, src/components/layout/employee-shell.tsx
+Last updated: 2026-07-06
 
 | Property         | Class           |
 | ---------------- | --------------- |
@@ -195,12 +195,12 @@ Last updated: 2026-07-05
 | Accent usage     | none |
 
 **Pattern notes:**
-The admin mobile drawer and backdrop render through a body portal so the outside-click layer covers the full viewport instead of being trapped by the header stacking context. The portaled backdrop/drawer use explicit overlay `zIndex` values to sit above the sticky header. It uses a light touch outside backdrop (`bg-foreground/15`) and closes on outside pointer down, Escape, nav link selection, or the close control. Header controls like notifications remain part of the topbar stacking flow; only opened overlay panels should portal above page content.
+Admin and employee mobile drawers and backdrops render through a body portal so the outside-click layer covers the full viewport instead of being trapped by the header stacking context. The portaled backdrop/drawer use explicit overlay `zIndex` values to sit above the sticky header. They use a light touch outside backdrop (`bg-foreground/15`) and close on outside pointer down, Escape, nav link selection, or the close control. Header controls like notifications remain part of the topbar stacking flow; only opened overlay panels should portal above page content. Employee and admin drawer behavior should stay matched, with only the nav item set differing by role.
 
 ### App Shell Stacking
 
 File: src/components/layout/admin-shell.tsx, src/components/layout/employee-shell.tsx
-Last updated: 2026-07-05
+Last updated: 2026-07-06
 
 | Property         | Class           |
 | ---------------- | --------------- |
@@ -215,4 +215,4 @@ Last updated: 2026-07-05
 | Accent usage     | none |
 
 **Pattern notes:**
-Sticky mobile app chrome uses `z-[900]` so it stays above Leaflet panes and controls (`z-index: 800`) while remaining below notification dropdown portals (`z-[1300]`) and mobile sidebar overlays (`zIndex: 2000+`). Keep map layering contained below shell chrome rather than raising individual map panes.
+Sticky mobile app chrome uses `z-[900]` so it stays above Leaflet panes and controls (`z-index: 800`) while remaining below notification dropdown portals (`z-[1300]`) and mobile sidebar overlays (`zIndex: 2000+`). Keep map layering contained below shell chrome rather than raising individual map panes. Employee desktop screens switch from mobile bottom navigation to a `lg:flex` app layout with a `w-64 xl:w-72 border-e border-border bg-surface-elevated` sidebar, a transparent desktop header for utility controls, and a `max-w-6xl` main content column so employee pages do not stretch awkwardly on wide screens. Employee mobile screens use the same hamburger drawer behavior as admin rather than exposing the account panel in the header.

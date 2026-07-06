@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 import { LogoutButton } from "@/components/auth/logout-button";
@@ -35,6 +35,18 @@ type AdminMobileSidebarProps = {
   };
 };
 
+function subscribeToClientSnapshot() {
+  return () => {};
+}
+
+function getClientSnapshot() {
+  return true;
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
 export function AdminMobileSidebar({
   devicesHref,
   eventsHref,
@@ -44,6 +56,11 @@ export function AdminMobileSidebar({
   user,
 }: AdminMobileSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const mounted = useSyncExternalStore(
+    subscribeToClientSnapshot,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
   const displayName = user.name || user.email;
   const isRtl = locale === "ar";
   const navLinkClass =
@@ -73,7 +90,7 @@ export function AdminMobileSidebar({
   }, [isOpen]);
 
   const sidebarOverlay =
-    typeof document !== "undefined"
+    mounted
       ? createPortal(
           <>
       <div
@@ -164,28 +181,34 @@ export function AdminMobileSidebar({
       <Button
         aria-expanded={isOpen}
         aria-label={isOpen ? labels.closeMenu : labels.openMenu}
-        className="h-10 w-10 p-0 lg:hidden"
+        className="size-11 p-0 lg:hidden"
         onClick={() => setIsOpen((current) => !current)}
         type="button"
         variant="outline"
       >
-        <span className="relative h-5 w-5" aria-hidden="true">
+        <span
+          className={cn(
+            "flex h-5 w-5 flex-col items-center justify-center gap-1.5",
+            isOpen && "gap-0",
+          )}
+          aria-hidden="true"
+        >
           <span
             className={cn(
-              "absolute start-0 top-0 h-0.5 w-5 rounded-full bg-current transition-transform duration-200 ease-out",
-              isOpen && "translate-y-2 rotate-45",
+              "h-0.5 w-5 rounded-full bg-current transition-transform duration-200 ease-out",
+              isOpen && "translate-y-0.5 rotate-45",
             )}
           />
           <span
             className={cn(
-              "absolute start-0 top-2 h-0.5 w-5 rounded-full bg-current transition-opacity duration-150 ease-out",
+              "h-0.5 w-5 rounded-full bg-current transition-opacity duration-150 ease-out",
               isOpen && "opacity-0",
             )}
           />
           <span
             className={cn(
-              "absolute start-0 top-4 h-0.5 w-5 rounded-full bg-current transition-transform duration-200 ease-out",
-              isOpen && "-translate-y-2 -rotate-45",
+              "h-0.5 w-5 rounded-full bg-current transition-transform duration-200 ease-out",
+              isOpen && "-translate-y-0.5 -rotate-45",
             )}
           />
         </span>

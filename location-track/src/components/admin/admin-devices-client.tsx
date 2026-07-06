@@ -28,6 +28,7 @@ import {
   type AdminDeviceRecord,
 } from "@/lib/admin-devices";
 import type { Locale, Messages } from "@/lib/i18n";
+import { notificationQueryKeys } from "@/lib/notifications";
 
 type AdminDevicesClientProps = {
   labels: Messages["admin"]["devices"];
@@ -301,9 +302,17 @@ export function AdminDevicesClient({
     },
     onSuccess: async () => {
       setActionError(null);
-      await queryClient.invalidateQueries({
-        queryKey: adminDeviceQueryKeys.adminDevices(),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: adminDeviceQueryKeys.adminDevices(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: notificationQueryKeys.notifications(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: notificationQueryKeys.unreadNotifications(),
+        }),
+      ]);
     },
   });
 

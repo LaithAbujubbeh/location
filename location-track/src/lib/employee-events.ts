@@ -316,12 +316,25 @@ export function findActionableRecheckSlot(slots: EmployeeEventRecheckSlot[]) {
 }
 
 export function canCheckIn(event: EmployeeEventItem) {
-  return event.assignment.checkedInAt === null;
+  return (
+    event.assignment.status === "PENDING" &&
+    event.assignment.checkedInAt === null
+  );
+}
+
+export function canSubmitRecheck(event: EmployeeEventItem) {
+  return (
+    (event.assignment.status === "IN_PROGRESS" ||
+      event.assignment.status === "SUSPICIOUS") &&
+    Boolean(findActionableRecheckSlot(event.event.recheckSlots))
+  );
 }
 
 export function canCheckOut(event: EmployeeEventItem) {
   return (
     event.event.requireCheckout &&
+    (event.assignment.status === "IN_PROGRESS" ||
+      event.assignment.status === "SUSPICIOUS") &&
     event.assignment.checkedInAt !== null &&
     event.assignment.checkedOutAt === null
   );

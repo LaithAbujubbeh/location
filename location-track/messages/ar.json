@@ -500,7 +500,9 @@
   },
   "employee": {
     "shell": {
-      "areaLabel": "تطبيق الموظف"
+      "areaLabel": "تطبيق الموظف",
+      "closeMenu": "إغلاق قائمة الموظف",
+      "openMenu": "فتح قائمة الموظف"
     },
     "nav": {
       "events": "الفعاليات"

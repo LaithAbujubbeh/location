@@ -14,10 +14,10 @@ import {
 import {
   canCheckIn,
   canCheckOut,
+  canSubmitRecheck,
   employeeEventQueryKeys,
   employeeEventQueryOptions,
   fetchEmployeeEventDetails,
-  findActionableRecheckSlot,
   formatDateRange,
   formatDateTime,
   type EmployeeEventItem,
@@ -166,8 +166,6 @@ function DetailContent({
   locale: Locale;
   statusLabels: Messages["status"];
 }) {
-  const actionableRecheck = findActionableRecheckSlot(item.event.recheckSlots);
-
   return (
     <div className="grid min-w-0 gap-4">
       <Card className="overflow-hidden">
@@ -227,7 +225,7 @@ function DetailContent({
                 label={labels.actions.checkIn}
               />
             ) : null}
-            {actionableRecheck ? (
+            {canSubmitRecheck(item) ? (
               <ActionLink
                 href={`/${locale}/employee/events/${item.event.id}/recheck`}
                 label={labels.actions.submitRecheck}
