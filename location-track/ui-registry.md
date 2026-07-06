@@ -199,7 +199,7 @@ Admin and employee mobile drawers and backdrops render through a body portal so 
 
 ### App Shell Stacking
 
-File: src/components/layout/admin-shell.tsx, src/components/layout/employee-shell.tsx
+File: src/components/layout/admin-shell.tsx, src/components/layout/employee-shell.tsx, src/components/layout/mobile-collapsing-header.tsx
 Last updated: 2026-07-06
 
 | Property         | Class           |
@@ -215,7 +215,7 @@ Last updated: 2026-07-06
 | Accent usage     | none |
 
 **Pattern notes:**
-Sticky mobile app chrome uses `z-[900]` so it stays above Leaflet panes and controls (`z-index: 800`) while remaining below notification dropdown portals (`z-[1300]`) and mobile sidebar overlays (`zIndex: 2000+`). Keep map layering contained below shell chrome rather than raising individual map panes. Employee desktop screens switch from mobile bottom navigation to a `lg:flex` app layout with a `w-64 xl:w-72 border-e border-border bg-surface-elevated` sidebar, a transparent desktop header for utility controls, and a `max-w-6xl` main content column so employee pages do not stretch awkwardly on wide screens. Employee mobile screens use the same hamburger drawer behavior as admin rather than exposing the account panel in the header.
+Sticky mobile app chrome uses `z-[900]` so it stays above Leaflet panes and controls (`z-index: 800`) while remaining below notification dropdown portals (`z-[1300]`) and mobile sidebar overlays (`zIndex: 2000+`). Keep map layering contained below shell chrome rather than raising individual map panes. Mobile headers collapse with `transition-transform duration-200 ease-out` on downward scroll and restore on upward scroll or near the top; desktop headers stay static with `lg:translate-y-0`. Employee desktop screens switch from mobile bottom navigation to a `lg:flex` app layout with a `w-64 xl:w-72 border-e border-border bg-surface-elevated` sidebar, a transparent desktop header for utility controls, and a `max-w-6xl` main content column so employee pages do not stretch awkwardly on wide screens. Employee mobile screens use the same hamburger drawer behavior as admin rather than exposing the account panel in the header.
 
 ### Proof Photo Upload
 

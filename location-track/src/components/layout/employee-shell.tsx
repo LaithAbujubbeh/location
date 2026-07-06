@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { EmployeeMobileSidebar } from "@/components/layout/employee-mobile-sidebar";
+import { MobileCollapsingHeader } from "@/components/layout/mobile-collapsing-header";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LanguageToggle } from "@/components/shared/language-toggle";
 import { NotificationBell } from "@/components/shared/notification-bell";
@@ -85,7 +86,7 @@ export function EmployeeShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-[900] border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5 lg:static lg:bg-transparent lg:px-6 lg:shadow-none">
+        <MobileCollapsingHeader className="sticky top-0 z-[900] border-b border-border bg-surface-elevated/95 px-4 py-3 shadow-[var(--shadow-sm)] backdrop-blur sm:px-5 lg:static lg:bg-transparent lg:px-6 lg:shadow-none">
           <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <div className="flex min-w-0 items-center gap-3 lg:hidden">
               <EmployeeMobileSidebar
@@ -137,7 +138,7 @@ export function EmployeeShell({
             </div>
             <LogoutButton label={labels.logout} locale={locale} />
           </div>
-        </header>
+        </MobileCollapsingHeader>
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 sm:px-5 lg:px-8 lg:pb-8 lg:pt-6">
           {children}

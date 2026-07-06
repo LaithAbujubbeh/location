@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { ProofPhotoField } from "@/components/employee/proof-photo-field";
 import { useProofPhotoUpload } from "@/components/employee/use-proof-photo-upload";
@@ -355,6 +356,7 @@ function CheckOutContent({
   statusLabels: Messages["status"];
 }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [deviceError, setDeviceError] = useState<string | null>(null);
   const [location, setLocation] = useState<BrowserLocationResult | null>(null);
@@ -406,6 +408,7 @@ function CheckOutContent({
           queryKey: employeeEventQueryKeys.employeeEventDetails(item.event.id),
         }),
       ]);
+      router.push(`/${locale}/employee/events/${item.event.id}`);
     },
   });
 
