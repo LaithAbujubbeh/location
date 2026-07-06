@@ -1,0 +1,16 @@
+name: Recheck Cron
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  call-recheck-cron:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Call recheck cron endpoint
+        run: |
+          curl -f -X GET "${{ secrets.APP_URL }}/api/cron/rechecks" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
