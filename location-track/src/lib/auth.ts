@@ -7,6 +7,7 @@ import { prisma } from "./prisma.ts";
 
 export const auth = betterAuth({
   appName: "Location Attendance",
+  baseURL: process.env.BETTER_AUTH_URL,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -52,6 +53,7 @@ export const auth = betterAuth({
       },
     },
   },
+  secret: process.env.BETTER_AUTH_SECRET,
   plugins: [nextCookies()],
 });
 
