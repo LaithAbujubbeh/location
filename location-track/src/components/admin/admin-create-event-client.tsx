@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,7 @@ import {
   fetchAdminUsers,
 } from "@/lib/admin-users";
 import type { Locale, Messages } from "@/lib/i18n";
+import { useScrollToError } from "@/lib/use-scroll-to-error";
 
 const LocationPickerMap = dynamic(
   () =>
@@ -167,9 +168,13 @@ export function AdminCreateEventClient({
   const [requireCheckout, setRequireCheckout] = useState(true);
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [assignmentInstructions, setAssignmentInstructions] = useState<
+    Record<string, string>
+  >({});
   const [slots, setSlots] = useState<RecheckSlotForm[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [slotError, setSlotError] = useState<string | null>(null);
+  const errorSummaryRef = useRef<HTMLDivElement | null>(null);
 
   const employeeIds = selectedEmployeeIds;
   const employeesQuery = useQuery({
@@ -210,6 +215,10 @@ export function AdminCreateEventClient({
     mutationFn: () =>
       createAdminEvent({
         employeeIds,
+        assignmentInstructions: employeeIds.map((employeeId) => ({
+          employeeId,
+          instructions: assignmentInstructions[employeeId]?.trim() || null,
+        })),
         endsAt: toIsoString(endsAt),
         latitude: parseNumber(latitude),
         locationName,
@@ -234,6 +243,14 @@ export function AdminCreateEventClient({
 
   const backendError =
     mutation.error instanceof AdminEventApiError ? mutation.error : null;
+  const validationError = Object.values(fieldErrors)[0] ?? slotError;
+  const submitError = backendError
+    ? `${backendError.code}:${backendError.message}`
+    : mutation.error
+      ? labels.errors.unknownSubmitError
+      : null;
+
+  useScrollToError(errorSummaryRef, validationError ?? submitError);
 
   function validateForm() {
     const errors: Partial<Record<FieldKey, string>> = {};
@@ -340,6 +357,13 @@ export function AdminCreateEventClient({
     );
   }
 
+  function updateAssignmentInstructions(employeeId: string, value: string) {
+    setAssignmentInstructions((current) => ({
+      ...current,
+      [employeeId]: value,
+    }));
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -352,6 +376,17 @@ export function AdminCreateEventClient({
 
   return (
     <form className="grid min-w-0 gap-4" onSubmit={handleSubmit}>
+      {validationError ? (
+        <div
+          className="outline-none"
+          ref={errorSummaryRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          <WarningBox>{validationError}</WarningBox>
+        </div>
+      ) : null}
+
       <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle>{labels.sections.basicsTitle}</CardTitle>
@@ -552,9 +587,30 @@ export function AdminCreateEventClient({
                         {employee.email}
                       </span>
                       {selected ? (
-                        <span className="text-xs font-medium text-success">
-                          {labels.employees.selected}
-                        </span>
+                        <>
+                          <span className="text-xs font-medium text-success">
+                            {labels.employees.selected}
+                          </span>
+                          <span className="grid gap-1.5 pt-2">
+                            <span className="text-xs font-medium text-text-muted">
+                              {labels.fields.assignmentInstructions}
+                            </span>
+                            <textarea
+                              className="min-h-24 w-full min-w-0 resize-y rounded-md border border-input bg-surface px-3 py-2 text-sm text-foreground shadow-[var(--shadow-sm)] outline-none transition-colors placeholder:text-text-subtle focus:border-ring focus:ring-2 focus:ring-ring/25"
+                              maxLength={1000}
+                              onChange={(event) =>
+                                updateAssignmentInstructions(
+                                  employee.id,
+                                  event.target.value,
+                                )
+                              }
+                              placeholder={
+                                labels.employees.instructionsPlaceholder
+                              }
+                              value={assignmentInstructions[employee.id] ?? ""}
+                            />
+                          </span>
+                        </>
                       ) : null}
                     </span>
                   </label>
@@ -644,17 +700,31 @@ export function AdminCreateEventClient({
       </Card>
 
       {backendError ? (
-        <WarningBox>
-          <span className="block font-medium">
-            {(labels.backendErrors as Record<string, string>)[backendError.code] ??
-              labels.backendErrors.REQUEST_FAILED}
-          </span>
-          <span className="mt-1 block text-danger">{backendError.message}</span>
-        </WarningBox>
+        <div
+          className="outline-none"
+          ref={errorSummaryRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          <WarningBox>
+            <span className="block font-medium">
+              {(labels.backendErrors as Record<string, string>)[backendError.code] ??
+                labels.backendErrors.REQUEST_FAILED}
+            </span>
+            <span className="mt-1 block text-danger">{backendError.message}</span>
+          </WarningBox>
+        </div>
       ) : null}
 
       {mutation.error && !backendError ? (
-        <WarningBox>{labels.errors.unknownSubmitError}</WarningBox>
+        <div
+          className="outline-none"
+          ref={errorSummaryRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          <WarningBox>{labels.errors.unknownSubmitError}</WarningBox>
+        </div>
       ) : null}
 
       <div className="grid gap-2 sm:flex sm:justify-end">

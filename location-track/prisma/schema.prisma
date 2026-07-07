@@ -187,6 +187,7 @@ model EventAssignment {
   checkedOutAt  DateTime?
   completedAt   DateTime?
   failureReason String?
+  instructions  String?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   event         Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)

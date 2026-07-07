@@ -34,6 +34,7 @@ export type EmployeeEventItem = {
   assignment: {
     id: string;
     status: AssignmentStatus;
+    instructions: string | null;
     checkedInAt: string | null;
     checkedOutAt: string | null;
     completedAt: string | null;

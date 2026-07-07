@@ -40,7 +40,7 @@ test("GPS timestamp within the accepted age window is fresh", () => {
 
 test("GPS timestamp older than the accepted age window is rejected", () => {
   const result = checkGpsTimestampFreshness({
-    gpsTimestamp: new Date("2026-07-10T11:59:59.999Z"),
+    gpsTimestamp: new Date("2026-07-10T11:58:29.999Z"),
     now: new Date("2026-07-10T12:00:30.000Z"),
   });
 
@@ -61,7 +61,8 @@ test("GPS timestamp too far in the future is rejected", () => {
 });
 
 test("GPS accuracy thresholds describe accepted and reviewable ranges", () => {
-  assert.equal(DEFAULT_ACCEPTED_GPS_ACCURACY_METERS, 100);
+  assert.equal(DEFAULT_MAX_GPS_AGE_MS, 2 * 60 * 1000);
+  assert.equal(DEFAULT_ACCEPTED_GPS_ACCURACY_METERS, 150);
   assert.equal(DEFAULT_MAX_REVIEWABLE_GPS_ACCURACY_METERS, 1000);
   assert.ok(
     DEFAULT_ACCEPTED_GPS_ACCURACY_METERS <

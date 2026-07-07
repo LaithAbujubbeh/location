@@ -33,6 +33,7 @@ function decimal(value: number) {
 const assignedEvent = {
   id: "assignment_1",
   status: AssignmentStatus.PENDING,
+  instructions: "Inspect the north loading bay.",
   checkedInAt: null,
   checkedOutAt: null,
   completedAt: null,
@@ -90,6 +91,7 @@ test("employee event list route uses the current session user only", async () =>
               assignment: {
                 id: "assignment_1",
                 status: AssignmentStatus.PENDING,
+                instructions: "Inspect the north loading bay.",
                 checkedInAt: null,
                 checkedOutAt: null,
                 completedAt: null,
@@ -172,6 +174,7 @@ test("employee event detail route returns planned recheck slots for the current 
           assignment: {
             id: "assignment_1",
             status: AssignmentStatus.IN_PROGRESS,
+            instructions: "Inspect the north loading bay.",
             checkedInAt: "2026-07-10T09:05:00.000Z",
             checkedOutAt: null,
             completedAt: null,
@@ -253,6 +256,10 @@ test("employee service queries only assigned active or upcoming events", async (
   assert.deepEqual(findManyWhere, countWhere);
   assert.equal(result.items.length, 1);
   assert.equal(result.items[0].assignment.id, "assignment_1");
+  assert.equal(
+    result.items[0].assignment.instructions,
+    "Inspect the north loading bay.",
+  );
   assert.equal(result.items[0].event.id, "event_1");
   assert.equal(result.items[0].event.recheckSlots[0].id, "slot_1");
 });

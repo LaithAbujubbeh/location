@@ -48,6 +48,7 @@ type AssignmentRecord = {
   id: string;
   employeeId: string;
   status: AssignmentStatus;
+  instructions: string | null;
   checkedInAt: Date | null;
   checkedOutAt: Date | null;
   failureReason: string | null;
@@ -113,6 +114,7 @@ const assignmentOne: AssignmentRecord = {
   id: "assignment_1",
   employeeId: "employee_1",
   status: AssignmentStatus.COMPLETED,
+  instructions: "Audit the loading bay.",
   checkedInAt: new Date("2026-07-10T08:15:00.000Z"),
   checkedOutAt: new Date("2026-07-10T15:45:00.000Z"),
   failureReason: null,
@@ -123,6 +125,7 @@ const assignmentTwo: AssignmentRecord = {
   id: "assignment_2",
   employeeId: "employee_2",
   status: AssignmentStatus.PENDING,
+  instructions: null,
   checkedInAt: null,
   checkedOutAt: null,
   failureReason: null,
@@ -396,6 +399,7 @@ test("timeline returns check-in, recheck, and checkout proofs with recheck statu
   assert.equal(result.recheckSlots[0].id, "slot_1");
   assert.equal(result.event.recheckSlots[0].startsAt, "2026-07-10T11:15:00.000Z");
   assert.equal(result.assignments[0].employee?.email, "maya@example.com");
+  assert.equal(result.assignments[0].instructions, "Audit the loading bay.");
   assert.deepEqual(
     result.timeline.map((proof) => proof.type),
     [ProofType.CHECK_IN, ProofType.RECHECK, ProofType.CHECK_OUT],

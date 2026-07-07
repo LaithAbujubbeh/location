@@ -14,7 +14,7 @@ export type GpsFreshnessResult =
       reason: "GPS_TOO_OLD" | "GPS_IN_FUTURE";
     };
 
-export const DEFAULT_MAX_GPS_AGE_MS = 30 * 1000;
+export const DEFAULT_MAX_GPS_AGE_MS = 2 * 60 * 1000;
 export const DEFAULT_MAX_GPS_FUTURE_DRIFT_MS = 5 * 1000;
 export const DEFAULT_ACCEPTED_GPS_ACCURACY_METERS = 150;
 export const DEFAULT_MAX_REVIEWABLE_GPS_ACCURACY_METERS = 1000;

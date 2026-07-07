@@ -65,6 +65,7 @@ function createAttendanceFlowTx() {
     eventId,
     employeeId,
     status: AssignmentStatus.PENDING,
+    instructions: null as string | null,
     checkedInAt: null as Date | null,
     checkedOutAt: null as Date | null,
     completedAt: null as Date | null,

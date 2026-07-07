@@ -939,6 +939,12 @@ export function AdminEventDetailClient({
                             value={assignment.finalReason ?? labels.none}
                           />
                           <InfoItem
+                            label={labels.fields.assignmentInstructions}
+                            value={
+                              assignment.instructions ?? labels.noInstructions
+                            }
+                          />
+                          <InfoItem
                             label={labels.fields.latestRecheck}
                             value={
                               latestRecheck ? (
@@ -984,6 +990,9 @@ export function AdminEventDetailClient({
                         {labels.fields.finalReason}
                       </th>
                       <th className="px-3 py-3 text-start">
+                        {labels.fields.assignmentInstructions}
+                      </th>
+                      <th className="px-3 py-3 text-start">
                         {labels.fields.latestRecheck}
                       </th>
                     </tr>
@@ -1024,6 +1033,11 @@ export function AdminEventDetailClient({
                           <td className="max-w-52 px-3 py-3 align-top text-text-muted">
                             <span className="block truncate">
                               {assignment.finalReason ?? labels.none}
+                            </span>
+                          </td>
+                          <td className="max-w-72 px-3 py-3 align-top text-text-muted">
+                            <span className="block whitespace-pre-wrap">
+                              {assignment.instructions ?? labels.noInstructions}
                             </span>
                           </td>
                           <td className="px-3 py-3 align-top">

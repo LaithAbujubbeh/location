@@ -250,6 +250,7 @@
         "scheduleTitle": "الجدول والمتطلبات"
       },
       "fields": {
+        "assignmentInstructions": "تعليمات التعيين",
         "employeeIds": "معرفات الموظفين",
         "endsAt": "تنتهي في",
         "latitude": "خط العرض",
@@ -301,6 +302,7 @@
       "employees": {
         "empty": "لم يتم العثور على موظفين.",
         "error": "تعذر تحميل الموظفين.",
+        "instructionsPlaceholder": "ما المطلوب من هذا الموظف في الفعالية؟",
         "loading": "جار تحميل الموظفين",
         "searchPlaceholder": "ابحث عن الموظفين",
         "selected": "محدد"
@@ -333,6 +335,7 @@
       "noRechecksTitle": "لا توجد مواعيد إعادة تحقق ثابتة",
       "noRechecksDescription": "لا تحتوي هذه الفعالية على مواعيد إعادة تحقق ثابتة.",
       "noRecheck": "لا توجد إعادة تحقق",
+      "noInstructions": "لا توجد تعليمات للتعيين",
       "none": "لا يوجد",
       "notSubmitted": "لم يتم الإرسال بعد",
       "radiusMeters": "{value} متر",
@@ -359,6 +362,7 @@
         "totalAssigned": "إجمالي المعينين"
       },
       "fields": {
+        "assignmentInstructions": "تعليمات التعيين",
         "assignmentStatus": "حالة التعيين",
         "checkedInAt": "وقت الحضور",
         "checkedOutAt": "وقت الخروج",
@@ -435,6 +439,7 @@
       "emptyDescription": "ستظهر الإثباتات وسجلات إعادة التحقق المطابقة للفلاتر الحالية هنا.",
       "emptyRecordsTitle": "لا توجد سجلات لهذا الموظف",
       "none": "لا يوجد",
+      "noInstructions": "لا توجد تعليمات للتعيين",
       "notSubmitted": "لم يتم الإرسال بعد",
       "meters": "{value} متر",
       "recheckRecordTitle": "سجل إعادة تحقق",
@@ -458,6 +463,7 @@
       },
       "fields": {
         "assignmentCount": "التعيينات",
+        "assignmentInstructions": "تعليمات التعيين",
         "checkedInAt": "وقت الحضور",
         "checkedOutAt": "وقت الخروج",
         "createdAt": "تاريخ الإنشاء",
@@ -545,6 +551,7 @@
       "noRechecksTitle": "لا توجد إعادة تحقق مخططة",
       "noRechecksDescription": "لا تحتوي هذه الفعالية على مواعيد إعادة تحقق ثابتة.",
       "instructionsTitle": "التعليمات",
+      "noInstructions": "لا توجد تعليمات للتعيين",
       "instructions": [
         "وصل إلى موقع الفعالية قبل تسجيل الحضور.",
         "أبق الوصول إلى الموقع مفعلا أثناء حضورك.",
@@ -554,6 +561,7 @@
       "errorTitle": "تعذر تحميل تفاصيل الفعالية",
       "errorDescription": "حدّث الصفحة أو عد إلى قائمة الفعاليات.",
       "fields": {
+        "assignmentInstructions": "تعليمات التعيين",
         "checkIn": "وقت تسجيل الحضور",
         "checkout": "تسجيل الخروج",
         "radius": "النطاق المسموح",

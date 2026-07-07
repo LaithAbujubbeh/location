@@ -74,6 +74,7 @@ export type AdminAssignmentSummary = {
     email: string;
   } | null;
   status: AssignmentStatus;
+  instructions: string | null;
   checkedInAt: string | null;
   checkedOutAt: string | null;
   finalReason: string | null;
@@ -136,6 +137,10 @@ export type AdminCreateEventPayload = {
   startsAt: string;
   endsAt: string;
   employeeIds: string[];
+  assignmentInstructions: Array<{
+    employeeId: string;
+    instructions: string | null;
+  }>;
   recheckSlots: Array<{
     startsAt: string;
     expiresAt: string;

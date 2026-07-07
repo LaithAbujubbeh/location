@@ -12,5 +12,7 @@ test("create event page selects employees from admin users", async () => {
   assert.match(source, /isActive: true/);
   assert.match(source, /role: "EMPLOYEE"/);
   assert.match(source, /toggleEmployee/);
-  assert.doesNotMatch(source, /<textarea/);
+  assert.match(source, /assignmentInstructions/);
+  assert.match(source, /updateAssignmentInstructions/);
+  assert.match(source, /<textarea/);
 });

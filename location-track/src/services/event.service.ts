@@ -80,6 +80,7 @@ export type EmployeeEventListItem = {
   assignment: {
     id: string;
     status: AssignmentStatus;
+    instructions: string | null;
     checkedInAt: string | null;
     checkedOutAt: string | null;
     completedAt: string | null;
@@ -184,6 +185,7 @@ export type AdminAssignmentSummary = {
     email: string;
   } | null;
   status: AssignmentStatus;
+  instructions: string | null;
   checkedInAt: string | null;
   checkedOutAt: string | null;
   finalReason: string | null;
@@ -247,10 +249,12 @@ export type AdminEventEmployeesResult = {
 type GetAdminEventTimelineArgs = {
   eventId: string;
   query: AdminEventTimelineQueryInput;
+  now?: Date;
 };
 
 type ListAdminEventsArgs = {
   query: AdminEventListQueryInput;
+  now?: Date;
 };
 
 const eventRecheckSlotSelect = {
@@ -298,6 +302,7 @@ const adminAssignmentSelect = {
   id: true,
   employeeId: true,
   status: true,
+  instructions: true,
   checkedInAt: true,
   checkedOutAt: true,
   failureReason: true,
@@ -478,6 +483,7 @@ function toAssignmentSummary(
         }
       : null,
     status: assignment.status,
+    instructions: assignment.instructions,
     checkedInAt: assignment.checkedInAt?.toISOString() ?? null,
     checkedOutAt: assignment.checkedOutAt?.toISOString() ?? null,
     finalReason: assignment.failureReason,
@@ -661,10 +667,17 @@ export async function createEventForAdmin({
       },
     });
 
+    const instructionsByEmployeeId = new Map(
+      input.assignmentInstructions.map((assignment) => [
+        assignment.employeeId,
+        assignment.instructions,
+      ]),
+    );
     const assignments = await tx.eventAssignment.createMany({
       data: input.employeeIds.map((employeeId) => ({
         eventId: event.id,
         employeeId,
+        instructions: instructionsByEmployeeId.get(employeeId) ?? null,
       })),
     });
 
@@ -690,30 +703,66 @@ export async function createEventForAdmin({
   });
 }
 
+export async function completeEndedEvents({
+  now = new Date(),
+}: {
+  now?: Date;
+} = {}) {
+  return prisma.$transaction((tx) => completeEndedEventsInTransaction(tx, { now }));
+}
+
+export async function completeEndedEventsInTransaction(
+  tx: Prisma.TransactionClient,
+  {
+    now = new Date(),
+  }: {
+    now?: Date;
+  } = {},
+) {
+  return tx.event.updateMany({
+    where: {
+      status: {
+        in: [EventStatus.SCHEDULED, EventStatus.ACTIVE],
+      },
+      endsAt: {
+        lte: now,
+      },
+    },
+    data: {
+      status: EventStatus.COMPLETED,
+    },
+  });
+}
+
 export async function listAdminEvents({
   query,
+  now = new Date(),
 }: ListAdminEventsArgs): Promise<AdminEventListResult> {
   const skip = (query.page - 1) * query.pageSize;
 
-  const [total, events] = await prisma.$transaction([
-    prisma.event.count(),
-    prisma.event.findMany({
-      orderBy: [
-        {
-          startsAt: "desc",
-        },
-        {
-          createdAt: "desc",
-        },
-        {
-          id: "asc",
-        },
-      ],
-      skip,
-      take: query.pageSize,
-      select: adminEventListSelect,
-    }),
-  ]);
+  const [total, events] = await prisma.$transaction(async (tx) => {
+    await completeEndedEventsInTransaction(tx, { now });
+
+    return Promise.all([
+      tx.event.count(),
+      tx.event.findMany({
+        orderBy: [
+          {
+            startsAt: "desc",
+          },
+          {
+            createdAt: "desc",
+          },
+          {
+            id: "asc",
+          },
+        ],
+        skip,
+        take: query.pageSize,
+        select: adminEventListSelect,
+      }),
+    ]);
+  });
 
   return {
     items: events.map(toAdminEventListItem),
@@ -797,13 +846,15 @@ export async function listAssignedEventsForEmployee({
   query,
   now = new Date(),
 }: ListAssignedEventsForEmployeeArgs): Promise<EmployeeEventListResult> {
-  return prisma.$transaction((tx) =>
-    listAssignedEventsForEmployeeInTransaction(tx, {
+  return prisma.$transaction(async (tx) => {
+    await completeEndedEventsInTransaction(tx, { now });
+
+    return listAssignedEventsForEmployeeInTransaction(tx, {
       employeeId,
       query,
       now,
-    }),
-  );
+    });
+  });
 }
 
 export async function listAssignedEventsForEmployeeInTransaction(
@@ -847,6 +898,7 @@ export async function listAssignedEventsForEmployeeInTransaction(
       select: {
         id: true,
         status: true,
+        instructions: true,
         checkedInAt: true,
         checkedOutAt: true,
         completedAt: true,
@@ -890,6 +942,7 @@ export async function listAssignedEventsForEmployeeInTransaction(
       assignment: {
         id: assignment.id,
         status: assignment.status,
+        instructions: assignment.instructions,
         checkedInAt: assignment.checkedInAt?.toISOString() ?? null,
         checkedOutAt: assignment.checkedOutAt?.toISOString() ?? null,
         completedAt: assignment.completedAt?.toISOString() ?? null,
@@ -937,14 +990,16 @@ export async function getAssignedEventForEmployee({
   query,
   now = new Date(),
 }: GetAssignedEventForEmployeeArgs): Promise<EmployeeEventDetailResult> {
-  return prisma.$transaction((tx) =>
-    getAssignedEventForEmployeeInTransaction(tx, {
+  return prisma.$transaction(async (tx) => {
+    await completeEndedEventsInTransaction(tx, { now });
+
+    return getAssignedEventForEmployeeInTransaction(tx, {
       employeeId,
       eventId,
       query,
       now,
-    }),
-  );
+    });
+  });
 }
 
 export async function getAssignedEventForEmployeeInTransaction(
@@ -970,6 +1025,7 @@ export async function getAssignedEventForEmployeeInTransaction(
     select: {
       id: true,
       status: true,
+      instructions: true,
       checkedInAt: true,
       checkedOutAt: true,
       completedAt: true,
@@ -1017,6 +1073,7 @@ export async function getAssignedEventForEmployeeInTransaction(
     assignment: {
       id: assignment.id,
       status: assignment.status,
+      instructions: assignment.instructions,
       checkedInAt: assignment.checkedInAt?.toISOString() ?? null,
       checkedOutAt: assignment.checkedOutAt?.toISOString() ?? null,
       completedAt: assignment.completedAt?.toISOString() ?? null,
@@ -1052,10 +1109,13 @@ export async function getAssignedEventForEmployeeInTransaction(
 export async function getAdminEventTimeline({
   eventId,
   query,
+  now = new Date(),
 }: GetAdminEventTimelineArgs): Promise<AdminEventTimelineResult> {
-  return prisma.$transaction((tx) =>
-    getAdminEventTimelineInTransaction(tx, { eventId, query }),
-  );
+  return prisma.$transaction(async (tx) => {
+    await completeEndedEventsInTransaction(tx, { now });
+
+    return getAdminEventTimelineInTransaction(tx, { eventId, query, now });
+  });
 }
 
 export async function getAdminEventTimelineInTransaction(
@@ -1162,10 +1222,13 @@ export async function getAdminEventTimelineInTransaction(
 export async function listAdminEventEmployees({
   eventId,
   query,
+  now = new Date(),
 }: GetAdminEventTimelineArgs): Promise<AdminEventEmployeesResult> {
-  return prisma.$transaction((tx) =>
-    listAdminEventEmployeesInTransaction(tx, { eventId, query }),
-  );
+  return prisma.$transaction(async (tx) => {
+    await completeEndedEventsInTransaction(tx, { now });
+
+    return listAdminEventEmployeesInTransaction(tx, { eventId, query, now });
+  });
 }
 
 export async function listAdminEventEmployeesInTransaction(

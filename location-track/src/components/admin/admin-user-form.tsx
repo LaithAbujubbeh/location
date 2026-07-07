@@ -4,7 +4,7 @@ import type { UserRole } from "@prisma/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import {
   type AdminUserRecord,
 } from "@/lib/admin-users";
 import type { Locale, Messages } from "@/lib/i18n";
+import { useScrollToError } from "@/lib/use-scroll-to-error";
 
 type AdminUserFormProps = {
   labels: Messages["admin"]["users"];
@@ -83,6 +84,7 @@ export function AdminUserForm({
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole | null>(isEdit ? null : "EMPLOYEE");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const errorSummaryRef = useRef<HTMLDivElement | null>(null);
 
   const detailQuery = useQuery({
     enabled: isEdit && Boolean(userId),
@@ -129,6 +131,14 @@ export function AdminUserForm({
 
   const backendError =
     mutation.error instanceof AdminUserApiError ? mutation.error : null;
+  const validationError = Object.values(fieldErrors)[0] ?? null;
+  const submitError = backendError
+    ? `${backendError.code}:${backendError.message}`
+    : mutation.error
+      ? labels.errors.unknownSubmitError
+      : null;
+
+  useScrollToError(errorSummaryRef, validationError ?? submitError);
 
   function validateForm() {
     const errors: FieldErrors = {};
@@ -190,6 +200,17 @@ export function AdminUserForm({
 
   return (
     <form className="grid min-w-0 gap-4" onSubmit={handleSubmit}>
+      {validationError ? (
+        <div
+          className="outline-none"
+          ref={errorSummaryRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          <WarningBox>{validationError}</WarningBox>
+        </div>
+      ) : null}
+
       <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle>
@@ -264,17 +285,31 @@ export function AdminUserForm({
       </Card>
 
       {backendError ? (
-        <WarningBox>
-          <span className="block font-medium">
-            {(labels.backendErrors as Record<string, string>)[backendError.code] ??
-              labels.backendErrors.REQUEST_FAILED}
-          </span>
-          <span className="mt-1 block">{backendError.message}</span>
-        </WarningBox>
+        <div
+          className="outline-none"
+          ref={errorSummaryRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          <WarningBox>
+            <span className="block font-medium">
+              {(labels.backendErrors as Record<string, string>)[backendError.code] ??
+                labels.backendErrors.REQUEST_FAILED}
+            </span>
+            <span className="mt-1 block">{backendError.message}</span>
+          </WarningBox>
+        </div>
       ) : null}
 
       {mutation.error && !backendError ? (
-        <WarningBox>{labels.errors.unknownSubmitError}</WarningBox>
+        <div
+          className="outline-none"
+          ref={errorSummaryRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          <WarningBox>{labels.errors.unknownSubmitError}</WarningBox>
+        </div>
       ) : null}
 
       <div className="grid gap-2 sm:flex sm:justify-end">

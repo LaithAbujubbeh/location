@@ -18,6 +18,7 @@ function eventWith(
       checkedOutAt: null,
       completedAt: null,
       id: "assignment-1",
+      instructions: null,
       status: "PENDING",
       ...overrides,
     },

@@ -363,6 +363,10 @@ function AssignmentTimeline({
             label={labels.fields.recheckCount}
             value={String(assignment.rechecks.length)}
           />
+          <InfoItem
+            label={labels.fields.assignmentInstructions}
+            value={assignment.instructions ?? labels.noInstructions}
+          />
         </dl>
 
         {!hasRecords ? (

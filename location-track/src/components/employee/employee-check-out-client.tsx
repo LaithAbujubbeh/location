@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -35,6 +35,7 @@ import {
   type EmployeeEventRecheckSlot,
 } from "@/lib/employee-events";
 import type { Locale, Messages } from "@/lib/i18n";
+import { useScrollToError } from "@/lib/use-scroll-to-error";
 
 type EmployeeCheckOutClientProps = {
   eventId: string;
@@ -364,6 +365,7 @@ function CheckOutContent({
   const [submitAttemptedWithoutLocation, setSubmitAttemptedWithoutLocation] =
     useState(false);
   const [result, setResult] = useState<EmployeeCheckOutResult | null>(null);
+  const errorFocusRef = useRef<HTMLDivElement | null>(null);
   const proofPhoto = useProofPhotoUpload({
     assignmentId: item.assignment.id,
     labels: proofPhotoLabels,
@@ -523,6 +525,25 @@ function CheckOutContent({
     (!photoRequired || Boolean(proofPhoto.file || proofPhoto.uploadedUrl)) &&
     !proofPhoto.uploading &&
     !mutation.isPending;
+  const submitAttemptLocationError =
+    submitAttemptedWithoutLocation && !location
+      ? labels.warnings.locationRequired
+      : null;
+  const submitErrorKey = mutationError
+    ? `submit:${mutationError.code}:${mutationError.message}`
+    : mutation.error
+      ? `submit:${labels.errors.unknownSubmitError}`
+      : null;
+  const activeErrorKey = deviceError
+    ? `device:${deviceError}`
+    : locationError
+      ? `location:${locationError}`
+      : proofPhoto.error
+        ? `photo:${proofPhoto.error}`
+        : submitErrorKey ?? (submitAttemptLocationError ? `warnings:${submitAttemptLocationError}` : null);
+  const activeErrorTarget = activeErrorKey?.split(":", 1)[0] ?? null;
+
+  useScrollToError(errorFocusRef, activeErrorKey);
 
   return (
     <div className="grid min-w-0 gap-4">
@@ -590,12 +611,26 @@ function CheckOutContent({
               }
             />
           </dl>
-          {deviceError ? <WarningBox tone="danger">{deviceError}</WarningBox> : null}
+          {deviceError ? (
+            <div
+              className="outline-none"
+              ref={activeErrorTarget === "device" ? errorFocusRef : undefined}
+              role="alert"
+              tabIndex={-1}
+            >
+              <WarningBox tone="danger">{deviceError}</WarningBox>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
       {warnings.length ? (
-        <div className="grid gap-2">
+        <div
+          className="grid gap-2 outline-none"
+          ref={activeErrorTarget === "warnings" ? errorFocusRef : undefined}
+          role={activeErrorTarget === "warnings" ? "alert" : undefined}
+          tabIndex={activeErrorTarget === "warnings" ? -1 : undefined}
+        >
           {warnings.map((warning) => (
             <WarningBox
               key={warning}
@@ -657,7 +692,16 @@ function CheckOutContent({
             >
               {location ? labels.actions.refreshLocation : labels.actions.getLocation}
             </Button>
-            {locationError ? <WarningBox tone="danger">{locationError}</WarningBox> : null}
+            {locationError ? (
+              <div
+                className="outline-none"
+                ref={activeErrorTarget === "location" ? errorFocusRef : undefined}
+                role="alert"
+                tabIndex={-1}
+              >
+                <WarningBox tone="danger">{locationError}</WarningBox>
+              </div>
+            ) : null}
           </StepCard>
 
           <StepCard
@@ -692,18 +736,25 @@ function CheckOutContent({
             step={4}
             title={labels.steps.photoTitle}
           >
-            <ProofPhotoField
-              disabled={mutation.isPending}
-              error={proofPhoto.error}
-              fileName={proofPhoto.fileName}
-              labels={proofPhotoLabels}
-              onClear={proofPhoto.clear}
-              onFileChange={proofPhoto.handleFileChange}
-              previewUrl={proofPhoto.previewUrl}
-              required={photoRequired}
-              uploadedUrl={proofPhoto.uploadedUrl}
-              uploading={proofPhoto.uploading}
-            />
+            <div
+              className="outline-none"
+              ref={activeErrorTarget === "photo" ? errorFocusRef : undefined}
+              role={activeErrorTarget === "photo" ? "alert" : undefined}
+              tabIndex={activeErrorTarget === "photo" ? -1 : undefined}
+            >
+              <ProofPhotoField
+                disabled={mutation.isPending}
+                error={proofPhoto.error}
+                fileName={proofPhoto.fileName}
+                labels={proofPhotoLabels}
+                onClear={proofPhoto.clear}
+                onFileChange={proofPhoto.handleFileChange}
+                previewUrl={proofPhoto.previewUrl}
+                required={photoRequired}
+                uploadedUrl={proofPhoto.uploadedUrl}
+                uploading={proofPhoto.uploading}
+              />
+            </div>
           </StepCard>
 
           <StepCard
@@ -729,16 +780,30 @@ function CheckOutContent({
             </Button>
 
             {mutationError ? (
-              <WarningBox tone="danger">
-                <span className="block font-medium">
-                  {getBackendErrorMessage(mutationError, labels)}
-                </span>
-                <span className="mt-1 block text-danger">{mutationError.message}</span>
-              </WarningBox>
+              <div
+                className="outline-none"
+                ref={activeErrorTarget === "submit" ? errorFocusRef : undefined}
+                role="alert"
+                tabIndex={-1}
+              >
+                <WarningBox tone="danger">
+                  <span className="block font-medium">
+                    {getBackendErrorMessage(mutationError, labels)}
+                  </span>
+                  <span className="mt-1 block text-danger">{mutationError.message}</span>
+                </WarningBox>
+              </div>
             ) : null}
 
             {mutation.error && !mutationError ? (
-              <WarningBox tone="danger">{labels.errors.unknownSubmitError}</WarningBox>
+              <div
+                className="outline-none"
+                ref={activeErrorTarget === "submit" ? errorFocusRef : undefined}
+                role="alert"
+                tabIndex={-1}
+              >
+                <WarningBox tone="danger">{labels.errors.unknownSubmitError}</WarningBox>
+              </div>
             ) : null}
           </StepCard>
         </div>

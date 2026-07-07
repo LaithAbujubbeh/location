@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { signIn, signOut } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useScrollToError } from "@/lib/use-scroll-to-error";
 
 type LoginFormLabels = {
   email: string;
@@ -37,8 +38,11 @@ function isInactiveAccountError(error: AuthError | null | undefined) {
 
 export function LoginForm({ initialError, labels, nextPath }: LoginFormProps) {
   const router = useRouter();
+  const errorRef = useRef<HTMLParagraphElement | null>(null);
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useScrollToError(errorRef, error);
 
   useEffect(() => {
     if (!initialError) {
@@ -120,7 +124,12 @@ export function LoginForm({ initialError, labels, nextPath }: LoginFormProps) {
       </label>
 
       {error ? (
-        <p className="break-words rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+        <p
+          className="break-words rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger outline-none"
+          ref={errorRef}
+          role="alert"
+          tabIndex={-1}
+        >
           {error}
         </p>
       ) : null}

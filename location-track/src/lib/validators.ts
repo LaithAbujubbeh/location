@@ -14,6 +14,16 @@ const recheckSlotSchema = z.object({
   expiresAt: dateString,
 });
 
+const assignmentInstructionSchema = z.object({
+  employeeId: z.string().trim().min(1),
+  instructions: z
+    .string()
+    .trim()
+    .max(1000)
+    .optional()
+    .transform((value) => value || null),
+});
+
 export const createEventSchema = z
   .object({
     name: z.string().trim().min(1).max(160),
@@ -24,6 +34,10 @@ export const createEventSchema = z
     startsAt: dateString,
     endsAt: dateString,
     employeeIds: z.array(z.string().trim().min(1)).min(1),
+    assignmentInstructions: z
+      .array(assignmentInstructionSchema)
+      .max(500)
+      .default([]),
     recheckSlots: z.array(recheckSlotSchema).max(10).default([]),
     requirePhoto: z.boolean().default(false),
     requireCheckout: z.boolean().default(true),
@@ -43,6 +57,29 @@ export const createEventSchema = z
         path: ["employeeIds"],
         message: "employeeIds must not contain duplicates.",
       });
+    }
+
+    const employeeIds = new Set(value.employeeIds);
+    const assignmentInstructionEmployeeIds = new Set<string>();
+
+    for (const [index, assignment] of value.assignmentInstructions.entries()) {
+      if (!employeeIds.has(assignment.employeeId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["assignmentInstructions", index, "employeeId"],
+          message: "assignmentInstructions must reference selected employeeIds.",
+        });
+      }
+
+      if (assignmentInstructionEmployeeIds.has(assignment.employeeId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["assignmentInstructions", index, "employeeId"],
+          message: "assignmentInstructions must not contain duplicate employeeIds.",
+        });
+      }
+
+      assignmentInstructionEmployeeIds.add(assignment.employeeId);
     }
 
     const startsAtTimes = new Set<number>();

@@ -217,6 +217,10 @@ function DetailContent({
               label={labels.fields.radius}
               value={`${item.event.radiusMeters} ${labels.meters}`}
             />
+            <InfoItem
+              label={labels.fields.assignmentInstructions}
+              value={item.assignment.instructions ?? labels.noInstructions}
+            />
           </dl>
           <div className="grid gap-2 sm:flex sm:flex-wrap">
             {canCheckIn(item) ? (

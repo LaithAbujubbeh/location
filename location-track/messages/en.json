@@ -267,6 +267,7 @@
         "useCurrentLocation": "Use my current location"
       },
       "fields": {
+        "assignmentInstructions": "Assignment instructions",
         "employeeIds": "Employee IDs",
         "endsAt": "Ends at",
         "latitude": "Latitude",
@@ -318,6 +319,7 @@
       "employees": {
         "empty": "No employees found.",
         "error": "Employees could not be loaded.",
+        "instructionsPlaceholder": "What should this employee do at the event?",
         "loading": "Loading employees",
         "searchPlaceholder": "Search employees",
         "selected": "Selected"
@@ -333,6 +335,7 @@
       "noRechecksTitle": "No fixed recheck slots",
       "noRechecksDescription": "This event does not have fixed recheck slots.",
       "noRecheck": "No recheck",
+      "noInstructions": "No assignment instructions",
       "none": "None",
       "notSubmitted": "Not submitted yet",
       "radiusMeters": "{value} meters",
@@ -359,6 +362,7 @@
         "totalAssigned": "Total assigned"
       },
       "fields": {
+        "assignmentInstructions": "Assignment instructions",
         "assignmentStatus": "Assignment status",
         "checkedInAt": "Checked in",
         "checkedOutAt": "Checked out",
@@ -435,6 +439,7 @@
       "emptyDescription": "Proofs and recheck records matching the current filters will appear here.",
       "emptyRecordsTitle": "No records for this employee",
       "none": "None",
+      "noInstructions": "No assignment instructions",
       "notSubmitted": "Not submitted yet",
       "meters": "{value} meters",
       "recheckRecordTitle": "Recheck record",
@@ -458,6 +463,7 @@
       },
       "fields": {
         "assignmentCount": "Assignments",
+        "assignmentInstructions": "Assignment instructions",
         "checkedInAt": "Checked in",
         "checkedOutAt": "Checked out",
         "createdAt": "Created",
@@ -545,6 +551,7 @@
       "noRechecksTitle": "No rechecks planned",
       "noRechecksDescription": "This event does not have fixed recheck slots.",
       "instructionsTitle": "Instructions",
+      "noInstructions": "No assignment instructions",
       "instructions": [
         "Arrive at the event location before checking in.",
         "Keep location access enabled while you are attending.",
@@ -554,6 +561,7 @@
       "errorTitle": "Event details could not be loaded",
       "errorDescription": "Refresh the page or return to your events list.",
       "fields": {
+        "assignmentInstructions": "Assignment instructions",
         "checkIn": "Check-in time",
         "checkout": "Checkout",
         "radius": "Allowed radius",
