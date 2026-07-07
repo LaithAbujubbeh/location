@@ -16,7 +16,7 @@ export type GpsFreshnessResult =
 
 export const DEFAULT_MAX_GPS_AGE_MS = 30 * 1000;
 export const DEFAULT_MAX_GPS_FUTURE_DRIFT_MS = 5 * 1000;
-export const DEFAULT_ACCEPTED_GPS_ACCURACY_METERS = 100;
+export const DEFAULT_ACCEPTED_GPS_ACCURACY_METERS = 150;
 export const DEFAULT_MAX_REVIEWABLE_GPS_ACCURACY_METERS = 1000;
 
 const EARTH_RADIUS_METERS = 6371000;
@@ -29,7 +29,9 @@ export function calculateHaversineDistanceMeters(
   origin: GeoPoint,
   destination: GeoPoint,
 ) {
-  const latitudeDelta = degreesToRadians(destination.latitude - origin.latitude);
+  const latitudeDelta = degreesToRadians(
+    destination.latitude - origin.latitude,
+  );
   const longitudeDelta = degreesToRadians(
     destination.longitude - origin.longitude,
   );
@@ -43,7 +45,9 @@ export function calculateHaversineDistanceMeters(
       Math.sin(longitudeDelta / 2) ** 2;
 
   return (
-    2 * EARTH_RADIUS_METERS * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))
+    2 *
+    EARTH_RADIUS_METERS *
+    Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))
   );
 }
 
